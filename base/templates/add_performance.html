@@ -1,0 +1,637 @@
+{% extends 'index.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    :root {
+        --primary: #4361ee;
+        --primary-dark: #3a56d4;
+        --primary-light: #eef2ff;
+        --secondary: #3f37c9;
+        --accent: #4895ef;
+        --success: #4cc9f0;
+        --info: #4361ee;
+        --warning: #f8961e;
+        --danger: #f72585;
+        --dark: #1a1a2e;
+        --darker: #16213e;
+        --light: #f8f9fa;
+        --lighter: #f1f3f9;
+        --gray: #6c757d;
+        --gray-light: #e9ecef;
+        --gray-lightest: #f8f9fa;
+        --white: #ffffff;
+        --header-height: 80px;
+        --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+        --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+        --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        --border-radius: 0.375rem;
+        --border-radius-lg: 0.5rem;
+        --border-radius-xl: 1rem;
+    }
+
+    /* Main Header */
+    .main-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2.5rem;
+        padding: 1.5rem 0;
+        border-bottom: 1px solid var(--gray-light);
+        animation: fadeInDown 0.6s ease;
+    }
+
+    .main-header h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--dark);
+        position: relative;
+        padding-bottom: 0.75rem;
+        letter-spacing: 0.3px;
+    }
+
+    .main-header h1::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 50px;
+        height: 3px;
+        background: linear-gradient(90deg, var(--primary), var(--accent));
+        border-radius: 2px;
+    }
+
+    .main-header p {
+        font-size: 0.95rem;
+        color: var(--gray);
+        margin-top: 0.5rem;
+        line-height: 1.5;
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .notification-btn, .profile-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: var(--border-radius);
+        background-color: var(--white);
+        border: 1px solid var(--gray-light);
+        color: var(--gray);
+        transition: var(--transition);
+    }
+
+    .notification-btn:hover, .profile-btn:hover {
+        background-color: var(--primary-light);
+        color: var(--primary);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .notification-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background-color: var(--danger);
+        color: var(--white);
+        border-radius: 50%;
+        padding: 0.2rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .profile-btn img {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .tooltip {
+        position: relative;
+    }
+
+    .tooltip::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        top: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--dark);
+        color: var(--white);
+        padding: 0.4rem 0.8rem;
+        border-radius: var(--border-radius);
+        font-size: 0.8rem;
+        white-space: nowrap;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+
+    .tooltip:hover::after {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* Form Container */
+    .form-container {
+        background-color: var(--white);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        animation: fadeIn 0.8s ease;
+    }
+
+    .form-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .form-header h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--dark);
+        position: relative;
+        padding-left: 1rem;
+        letter-spacing: 0.3px;
+    }
+
+    .form-header h2::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 4px;
+        height: 24px;
+        background: linear-gradient(to bottom, var(--primary), var(--accent));
+        border-radius: 2px;
+    }
+
+    /* Buttons */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-size: 0.95rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        border: none;
+        box-shadow: var(--shadow-sm);
+        text-decoration: none;
+        line-height: 1.5;
+    }
+
+    .btn-primary {
+        background-color: var(--primary);
+        color: var(--white);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
+    }
+
+    .btn-secondary {
+        background-color: var(--white);
+        color: var(--primary);
+        border: 1px solid var(--primary-light);
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--primary-light);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
+    }
+
+    .btn i {
+        margin-right: 8px;
+        font-size: 0.9rem;
+    }
+
+    .btn-danger {
+        background-color: var(--danger);
+        color: var(--white);
+    }
+
+    .btn-danger:hover {
+        background-color: #d61f71;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
+    }
+
+    /* Form Styling */
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--dark);
+        letter-spacing: 0.3px;
+    }
+
+    .form-control, .form-select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border-radius: var(--border-radius);
+        border: 1px solid var(--gray-light);
+        background-color: var(--white);
+        font-size: 0.95rem;
+        transition: var(--transition);
+    }
+
+    .form-control:focus, .form-select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.2);
+    }
+
+    .form-select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236c757d' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 16px 12px;
+    }
+
+    .form-control.textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    /* Subject Performance Section */
+    .subject-performance-section {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--gray-light);
+    }
+
+    .subject-performance-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .subject-performance-header h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--dark);
+        position: relative;
+        padding-left: 1rem;
+    }
+
+    .subject-performance-header h3::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 4px;
+        height: 20px;
+        background: linear-gradient(to bottom, var(--primary), var(--accent));
+        border-radius: 2px;
+    }
+
+    .subject-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 3fr 0.5fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        align-items: center;
+    }
+
+    .subject-row .form-group {
+        margin-bottom: 0;
+    }
+
+    .remove-subject-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: var(--border-radius);
+        background-color: var(--white);
+        border: 1px solid var(--gray-light);
+        color: var(--danger);
+        transition: var(--transition);
+        cursor: pointer;
+    }
+
+    .remove-subject-btn:hover {
+        background-color: rgba(247, 37, 133, 0.1);
+        border-color: var(--danger);
+        transform: translateY(-2px);
+    }
+
+    .remove-subject-btn i {
+        font-size: 1rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 992px) {
+        .main-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .header-right {
+            width: 100%;
+            justify-content: flex-end;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .subject-row {
+            grid-template-columns: 1fr;
+            gap: 0.5rem;
+        }
+
+        .subject-row .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .remove-subject-btn {
+            width: 100%;
+            height: 40px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .main-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .main-header p {
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            padding: 0.65rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .form-control, .form-select {
+            font-size: 0.9rem;
+            padding: 0.65rem 0.9rem;
+        }
+
+        .form-header h2 {
+            font-size: 1.25rem;
+        }
+    }
+</style>
+
+<header class="main-header">
+    <div class="header-left">
+        <h1>Add Performance Record</h1>
+        <p>Enter academic and subject performance details for a beneficiary</p>
+    </div>
+    <div class="header-right">
+        <div class="notification-btn tooltip" data-tooltip="Notifications">
+            <i class="fas fa-bell"></i>
+            <span class="notification-badge">{{ unread_notifications }}</span>
+        </div>
+        <div class="profile-btn">
+            {% if user.profile_picture %}
+                <img src="{{ user.profile_picture.url }}" alt="Profile">
+            {% else %}
+                <img src="{% static 'images/avatar.png' %}" alt="Profile">
+            {% endif %}
+        </div>
+    </div>
+</header>
+
+<section class="form-container">
+    <div class="form-header">
+        <h2>Performance Details</h2>
+        <a href="{% url 'performance_dashboard' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <form method="POST" action="{% url 'add_performance' %}">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="beneficiary">Beneficiary <span style="color: var(--danger);">*</span></label>
+            <select id="beneficiary" name="beneficiary" class="form-select" required>
+                <option value="">Select Beneficiary</option>
+                {% for beneficiary in beneficiaries %}
+                    <option value="{{ beneficiary.id }}">{{ beneficiary.full_name }} ({{ beneficiary.get_current_level_display }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="term">Term <span style="color: var(--danger);">*</span></label>
+            <select id="term" name="term" class="form-select" required>
+                <option value="">Select Term</option>
+                {% for term_value, term_display in term_choices %}
+                    <option value="{{ term_value }}">{{ term_display }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="academic_year">Academic Year <span style="color: var(--danger);">*</span></label>
+            <select id="academic_year" name="academic_year" class="form-select" required>
+                <option value="">Select Year</option>
+                {% for year in years_range %}
+                    <option value="{{ year }}">{{ year }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="average_score">Average Score (%) <span style="color: var(--danger);">*</span></label>
+            <input type="number" id="average_score" name="average_score" class="form-control" step="0.01" min="0" max="100" required placeholder="e.g., 85.50">
+        </div>
+
+        <div class="form-group">
+            <label for="rank">Rank <span style="color: var(--danger);">*</span></label>
+            <input type="number" id="rank" name="rank" class="form-control" min="1" required placeholder="e.g., 1">
+        </div>
+
+        <div class="form-group">
+            <label for="comments">Comments</label>
+            <textarea id="comments" name="comments" class="form-control textarea" placeholder="Add any additional comments"></textarea>
+        </div>
+
+        <!-- Subject Performance Section -->
+        <div class="subject-performance-section">
+            <div class="subject-performance-header">
+                <h3>Subject Performance</h3>
+                <button type="button" class="btn btn-primary" id="add-subject-btn">
+                    <i class="fas fa-plus"></i> Add Subject
+                </button>
+            </div>
+            <div id="subject-performance-rows">
+                <!-- Initial subject row (one required) -->
+                <div class="subject-row">
+                    <div class="form-group">
+                        <label for="subject_0">Subject <span style="color: var(--danger);">*</span></label>
+                        <select name="subject[]" id="subject_0" class="form-select" required>
+                            <option value="">Select Subject</option>
+                            {% for subject in subjects %}
+                                <option value="{{ subject.id }}">{{ subject.name }} ({{ subject.get_level_display }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="score_0">Score (%) <span style="color: var(--danger);">*</span></label>
+                        <input type="number" name="score[]" id="score_0" class="form-control" step="0.01" min="0" max="100" required placeholder="e.g., 90.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="grade_0">Grade <span style="color: var(--danger);">*</span></label>
+                        <select name="grade[]" id="grade_0" class="form-select" required>
+                            <option value="">Select Grade</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="E">E</option>
+                            <option value="F">F</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="subject_comments_0">Comments</label>
+                        <textarea name="subject_comments[]" id="subject_comments_0" class="form-control textarea" placeholder="Subject-specific comments"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="remove-subject-btn" style="visibility: hidden;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Save Performance
+            </button>
+            <a href="{% url 'performance_dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+</section>
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        let subjectRowCount = 1;
+
+        // Add new subject performance row
+        $('#add-subject-btn').on('click', function() {
+            const newRow = `
+                <div class="subject-row" data-index="${subjectRowCount}">
+                    <div class="form-group">
+                        <label for="subject_${subjectRowCount}">Subject <span style="color: var(--danger);">*</span></label>
+                        <select name="subject[]" id="subject_${subjectRowCount}" class="form-select" required>
+                            <option value="">Select Subject</option>
+                            {% for subject in subjects %}
+                                <option value="{{ subject.id }}">{{ subject.name }} ({{ subject.get_level_display }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="score_${subjectRowCount}">Score (%) <span style="color: var(--danger);">*</span></label>
+                        <input type="number" name="score[]" id="score_${subjectRowCount}" class="form-control" step="0.01" min="0" max="100" required placeholder="e.g., 90.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="grade_${subjectRowCount}">Grade <span style="color: var(--danger);">*</span></label>
+                        <select name="grade[]" id="grade_${subjectRowCount}" class="form-select" required>
+                            <option value="">Select Grade</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="E">E</option>
+                            <option value="F">F</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="subject_comments_${subjectRowCount}">Comments</label>
+                        <textarea name="subject_comments[]" id="subject_comments_${subjectRowCount}" class="form-control textarea" placeholder="Subject-specific comments"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="remove-subject-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            $('#subject-performance-rows').append(newRow);
+            subjectRowCount++;
+        });
+
+        // Remove subject performance row
+        $('#subject-performance-rows').on('click', '.remove-subject-btn', function() {
+            if ($('.subject-row').length > 1) {
+                $(this).closest('.subject-row').remove();
+            }
+        });
+
+        // Validate form on submit
+        $('form').on('submit', function(e) {
+            let isValid = true;
+            $('.form-control[required], .form-select[required]').each(function() {
+                if (!$(this).val()) {
+                    isValid = false;
+                    $(this).addClass('is-invalid');
+                } else {
+                    $(this).removeClass('is-invalid');
+                }
+            });
+
+            $('.form-control[type="number"]').each(function() {
+                const val = parseFloat($(this).val());
+                if ($(this).attr('name') === 'average_score' || $(this).attr('name') === 'score[]') {
+                    if (isNaN(val) || val < 0 || val > 100) {
+                        isValid = false;
+                        $(this).addClass('is-invalid');
+                    }
+                } else if ($(this).attr('name') === 'rank') {
+                    if (isNaN(val) || val < 1) {
+                        isValid = false;
+                        $(this).addClass('is-invalid');
+                    }
+                }
+            });
+
+            $('.form-select[name="grade[]"]').each(function() {
+                const grade = $(this).val();
+                if (!['A', 'B', 'C', 'D', 'E', 'F'].includes(grade)) {
+                    isValid = false;
+                    $(this).addClass('is-invalid');
+                }
+            });
+
+            if (!isValid) {
+                e.preventDefault();
+                alert('Please fill in all required fields correctly.');
+            }
+        });
+    });
+</script>
+{% endblock %}
