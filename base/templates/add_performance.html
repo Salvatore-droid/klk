@@ -276,6 +276,46 @@
         min-height: 100px;
     }
 
+    /* File Input Styling */
+    .file-input-wrapper {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+        width: 100%;
+    }
+
+    .file-input-wrapper input[type="file"] {
+        font-size: 100px;
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .file-input-label {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border-radius: var(--border-radius);
+        border: 1px solid var(--gray-light);
+        background-color: var(--white);
+        font-size: 0.95rem;
+        color: var(--gray);
+        transition: var(--transition);
+        width: 100%;
+        cursor: pointer;
+    }
+
+    .file-input-label:hover {
+        background-color: var(--primary-light);
+        border-color: var(--primary);
+    }
+
+    .file-input-label i {
+        margin-right: 8px;
+    }
+
     /* Subject Performance Section */
     .subject-performance-section {
         margin-top: 2rem;
@@ -429,7 +469,7 @@
         </a>
     </div>
 
-    <form method="POST" action="{% url 'add_performance' %}">
+    <form method="POST" action="{% url 'add_performance' %}" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="form-group">
             <label for="beneficiary">Beneficiary <span style="color: var(--danger);">*</span></label>
@@ -474,6 +514,14 @@
         <div class="form-group">
             <label for="comments">Comments</label>
             <textarea id="comments" name="comments" class="form-control textarea" placeholder="Add any additional comments"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="report_file">Upload Scanned Report (PDF) <span style="color: var(--danger);">*</span></label>
+            <div class="file-input-wrapper">
+                <label class="file-input-label"><i class="fas fa-upload"></i> Choose PDF File</label>
+                <input type="file" id="report_file" name="report_file" accept=".pdf" required>
+            </div>
         </div>
 
         <!-- Subject Performance Section -->
@@ -595,7 +643,7 @@
         // Validate form on submit
         $('form').on('submit', function(e) {
             let isValid = true;
-            $('.form-control[required], .form-select[required]').each(function() {
+            $('.form-control[required], .form-select[required], input[type="file"][required]').each(function() {
                 if (!$(this).val()) {
                     isValid = false;
                     $(this).addClass('is-invalid');
@@ -627,10 +675,27 @@
                 }
             });
 
+            // Validate file type
+            const fileInput = $('#report_file');
+            if (fileInput.val()) {
+                const fileName = fileInput.val().toLowerCase();
+                if (!fileName.endsWith('.pdf')) {
+                    isValid = false;
+                    fileInput.addClass('is-invalid');
+                    alert('Please upload a PDF file.');
+                }
+            }
+
             if (!isValid) {
                 e.preventDefault();
                 alert('Please fill in all required fields correctly.');
             }
+        });
+
+        // Update file input label with selected file name
+        $('#report_file').on('change', function() {
+            const fileName = this.files[0]?.name || 'Choose PDF File';
+            $(this).siblings('.file-input-label').text(fileName);
         });
     });
 </script>

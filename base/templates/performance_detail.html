@@ -517,6 +517,7 @@
                     <th>Average Score</th>
                     <th>Rank</th>
                     <th>Comments</th>
+                    <th>Scanned Report</th>
                 </tr>
             </thead>
             <tbody>
@@ -535,10 +536,19 @@
                     </td>
                     <td>{{ performance.rank }}</td>
                     <td>{{ performance.comments|default:"-" }}</td>
+                    <td>
+                        {% if performance.report_file %}
+                            <a href="{{ performance.report_file.url }}" target="_blank" class="btn btn-primary btn-sm">
+                                <i class="fas fa-file-pdf"></i> View Report
+                            </a>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5">
+                    <td colspan="6">
                         <div class="empty-state">
                             <i class="fas fa-graduation-cap"></i>
                             <h3>No Academic Performance Records</h3>

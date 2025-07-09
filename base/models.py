@@ -408,3 +408,16 @@ class PerformanceReport(models.Model):
     
     def __str__(self):
         return self.title
+
+class AcademicPerformance(models.Model):
+    beneficiary = models.ForeignKey(Beneficiary, on_delete=models.CASCADE)
+    term = models.CharField(max_length=20)
+    academic_year = models.CharField(max_length=10)
+    average_score = models.DecimalField(max_digits=5, decimal_places=2)
+    rank = models.IntegerField()
+    comments = models.TextField(blank=True)
+    date_recorded = models.DateField(auto_now_add=True)
+    report_file = models.FileField(upload_to='performance_reports/', blank=True, null=True)
+
+    def __str__(self):
+        return f"Performance for {self.beneficiary} - Term {self.term} {self.academic_year}"

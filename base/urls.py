@@ -29,4 +29,5 @@ urlpatterns = [
     path('performance/export/', views.export_performance_report, name='export_performance_report'),
     path('performance/add/', views.add_performance, name='add_performance'),
     path('performance/detail/<int:pk>/', views.performance_detail, name='performance_detail'),
+    path('performance/note/<int:pk>/', views.add_performance_note, name='add_performance_note'),
 ]

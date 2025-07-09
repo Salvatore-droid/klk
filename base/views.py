@@ -647,7 +647,6 @@ def financial_reports(request):
 
 
 # Add to views.py
-
 from django.db.models import Avg, Max, Min, Count, Q
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -656,7 +655,6 @@ from django.contrib import messages
 from datetime import datetime
 from django.db import transaction
 from .models import AcademicPerformance, SubjectPerformance, Beneficiary, Subject, Notification, PerformanceReport, ActivityLog
-
 
 @login_required
 def performance_dashboard(request):
@@ -823,10 +821,16 @@ def add_performance(request):
             average_score = request.POST.get('average_score')
             rank = request.POST.get('rank')
             comments = request.POST.get('comments', '')
+            report_file = request.FILES.get('report_file')
 
             # Validate required fields
-            if not all([beneficiary_id, term, academic_year, average_score, rank]):
-                messages.error(request, "All required fields must be filled.")
+            if not all([beneficiary_id, term, academic_year, average_score, rank, report_file]):
+                messages.error(request, "All required fields must be filled, including the PDF report.")
+                return redirect('add_performance')
+
+            # Validate file type
+            if report_file and not report_file.name.lower().endswith('.pdf'):
+                messages.error(request, "Uploaded file must be a PDF.")
                 return redirect('add_performance')
 
             # Get beneficiary
@@ -855,7 +859,8 @@ def add_performance(request):
                 academic_year=academic_year,
                 average_score=average_score,
                 rank=rank,
-                comments=comments
+                comments=comments,
+                report_file=report_file
             )
 
             # Extract SubjectPerformance data
@@ -895,7 +900,7 @@ def add_performance(request):
             # Log activity
             ActivityLog.objects.create(
                 activity_type='performance',
-                description=f"Added performance record for {beneficiary.full_name} - Term {term} {academic_year}",
+                description=f"Added performance record for {beneficiary.full_name} - Term {term} {academic_year} with PDF report",
                 recorded_by=request.user,
                 related_beneficiary=beneficiary
             )
@@ -945,3 +950,27 @@ def performance_detail(request, pk):
     }
     
     return render(request, 'performance_detail.html', context)
+# ... (previous views remain unchanged, adding add_performance_note)
+
+@login_required
+def add_performance_note(request, pk):
+    beneficiary = get_object_or_404(Beneficiary, pk=pk)
+    if request.method == 'POST':
+        note = request.POST.get('note')
+        if note:
+            ActivityLog.objects.create(
+                activity_type='other',
+                description=f"Added note for {beneficiary.full_name}: {note}",
+                recorded_by=request.user,
+                related_beneficiary=beneficiary
+            )
+            messages.success(request, f"Note added for {beneficiary.full_name}.")
+            return redirect('performance_detail', pk=pk)
+        else:
+            messages.error(request, "Note cannot be empty.")
+    
+    context = {
+        'beneficiary': beneficiary,
+        'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+    }
+    return render(request, 'add_performance_note.html', context)
