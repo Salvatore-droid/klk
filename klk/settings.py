@@ -175,8 +175,10 @@ JAZZMIN_SETTINGS = {
         # external url that opens in a new window (Permissions can be added)
         {"name": "Support", "url": "https://github.com/farridav/django-jazzmin/issues", "new_window": True},
         
+
+        {"name": "View Site", "url": "/", "new_window": False},
         # model admin to link to (Permissions checked against model)
-        {"model": "auth.User"},
+        {"model": "base.User"},
         
         # App with dropdown menu to all its models pages (Permissions checked against models)
         {"app": "beneficiaries"},

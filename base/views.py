@@ -645,16 +645,19 @@ def financial_reports(request):
     return render(request, 'financial_reports.html', context)
 
 
-
-# Add to views.py
-from django.db.models import Avg, Max, Min, Count, Q
-from django.http import JsonResponse
+from django.db.models import Avg, Max, Count
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from datetime import datetime
 from django.db import transaction
-from .models import AcademicPerformance, SubjectPerformance, Beneficiary, Subject, Notification, PerformanceReport, ActivityLog
+from .models import AcademicPerformance, SubjectPerformance, Beneficiary, Subject, Notification
+import csv
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib import colors
+import os
 
 @login_required
 def performance_dashboard(request):
@@ -689,14 +692,25 @@ def performance_dashboard(request):
     top_score = performances.aggregate(max=Max('average_score'))['max'] or 0
     passing_rate = performances.filter(average_score__gte=50).count() / performances.count() * 100 if performances.count() > 0 else 0
     
-    # Get top performers with improvement
+    # Get top performers with improvement and score history
     top_performers = performances.select_related('beneficiary').order_by('-average_score')[:5]
     top_performers = [
         {
             'beneficiary': p.beneficiary,
             'average_score': p.average_score,
-            'improvement': abs(p.average_score - 70),  # Calculate absolute improvement from 70
-            'is_positive': p.average_score >= 70  # Determine if improvement is positive
+            'improvement': abs(p.average_score - (AcademicPerformance.objects.filter(
+                beneficiary=p.beneficiary,
+                academic_year__lt=p.academic_year
+            ).aggregate(avg=Avg('average_score'))['avg'] or p.average_score)),
+            'is_positive': p.average_score >= (AcademicPerformance.objects.filter(
+                beneficiary=p.beneficiary,
+                academic_year__lt=p.academic_year
+            ).aggregate(avg=Avg('average_score'))['avg'] or p.average_score),
+            'academic_performance_id': p.id,
+            'rank': p.rank,
+            'score_history': list(AcademicPerformance.objects.filter(
+                beneficiary=p.beneficiary
+            ).order_by('-academic_year', '-term')[:3].values_list('average_score', flat=True))
         } for p in top_performers
     ]
     
@@ -708,13 +722,6 @@ def performance_dashboard(request):
         count=Count('id')
     ).order_by('-avg_score')
     
-    # Get performance trends
-    performance_trends = performances.values(
-        'term', 'academic_year'
-    ).annotate(
-        avg_score=Avg('average_score')
-    ).order_by('academic_year', 'term')
-    
     context = {
         'education_levels': Beneficiary.LEVEL_CHOICES,
         'subjects': Subject.objects.all(),
@@ -722,14 +729,11 @@ def performance_dashboard(request):
         'selected_term': term,
         'selected_year': year,
         'selected_subject': subject,
-        # Metrics
         'avg_score': avg_score,
         'top_score': top_score,
         'passing_rate': passing_rate,
-        # Data for charts
         'top_performers': top_performers,
         'subject_averages': subject_averages,
-        'performance_trends': list(performance_trends),
         'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
         'years_range': range(2020, datetime.now().year + 1),
     }
@@ -738,7 +742,6 @@ def performance_dashboard(request):
 
 @login_required
 def performance_data_api(request):
-    # API endpoint for AJAX requests
     education_level = request.GET.get('education_level', '')
     term = request.GET.get('term', '')
     year = request.GET.get('year', '')
@@ -746,7 +749,6 @@ def performance_data_api(request):
     data_type = request.GET.get('type', 'trend')
     
     if data_type == 'trend':
-        # Return performance trend data
         performances = AcademicPerformance.objects.all()
         
         if education_level:
@@ -764,9 +766,9 @@ def performance_data_api(request):
         
         return JsonResponse({'data': list(data)})
     
-    elif data_type == 'subject':
-        # Return subject performance data
-        performances = SubjectPerformance.objects.all()
+    elif data_type == 'distribution':
+        data_type_detail = request.GET.get('data_type', 'overall')
+        performances = AcademicPerformance.objects.all()
         
         if education_level:
             performances = performances.filter(beneficiary__current_level=education_level)
@@ -774,47 +776,127 @@ def performance_data_api(request):
             performances = performances.filter(term=term)
         if year:
             performances = performances.filter(academic_year=year)
-        if subject:
-            performances = performances.filter(subject_id=subject)
         
-        data = performances.values(
-            'subject__name'
-        ).annotate(
-            avg_score=Avg('score'),
-            count=Count('id')
-        ).order_by('-avg_score')
+        if data_type_detail == 'overall':
+            data = [
+                {'range': 'Excellent (85-100)', 'count': performances.filter(average_score__gte=85).count()},
+                {'range': 'Good (70-84)', 'count': performances.filter(average_score__gte=70, average_score__lt=85).count()},
+                {'range': 'Average (50-69)', 'count': performances.filter(average_score__gte=50, average_score__lt=70).count()},
+                {'range': 'Poor (<50)', 'count': performances.filter(average_score__lt=50).count()}
+            ]
+            return JsonResponse({
+                'labels': [item['range'] for item in data],
+                'values': [item['count'] for item in data]
+            })
         
-        return JsonResponse({'data': list(data)})
+        elif data_type_detail == 'by_level':
+            data = performances.values('beneficiary__current_level').annotate(
+                count=Count('id')
+            ).order_by('beneficiary__current_level')
+            return JsonResponse({
+                'labels': [Beneficiary.LEVEL_CHOICES[int(item['beneficiary__current_level'])][1] for item in data],
+                'values': [item['count'] for item in data]
+            })
+        
+        elif data_type_detail == 'by_subject':
+            performances = SubjectPerformance.objects.all()
+            if education_level:
+                performances = performances.filter(beneficiary__current_level=education_level)
+            if term:
+                performances = performances.filter(term=term)
+            if year:
+                performances = performances.filter(academic_year=year)
+            if subject:
+                performances = performances.filter(subject_id=subject)
+            
+            data = performances.values('subject__name').annotate(
+                count=Count('id')
+            ).order_by('subject__name')
+            return JsonResponse({
+                'labels': [item['subject__name'] for item in data],
+                'values': [item['count'] for item in data]
+            })
     
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 @login_required
 def export_performance_report(request):
-    if request.method == 'POST':
-        report_type = request.POST.get('report_type')
-        academic_year = request.POST.get('academic_year')
-        term = request.POST.get('term', '')
-        education_level = request.POST.get('education_level', '')
+    format_type = request.GET.get('format', 'csv')
+    education_level = request.GET.get('education_level', '')
+    term = request.GET.get('term', '')
+    year = request.GET.get('year', '')
+    
+    performances = AcademicPerformance.objects.all()
+    if education_level:
+        performances = performances.filter(beneficiary__current_level=education_level)
+    if term:
+        performances = performances.filter(term=term)
+    if year:
+        performances = performances.filter(academic_year=year)
+    
+    if format_type == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="performance_report_{year}_{term}.csv"'
         
-        report = PerformanceReport.objects.create(
-            title=f"{report_type.capitalize()} Report - {academic_year} {term}",
-            report_type=report_type,
-            academic_year=academic_year,
-            term=term if term else None,
-            generated_by=request.user
-        )
+        writer = csv.writer(response)
+        writer.writerow(['Name', 'Education Level', 'Average Score', 'Rank', 'Term', 'Year'])
         
-        messages.success(request, f"Report generated successfully (ID: {report.id})")
-        return redirect('performance_dashboard')
+        for p in performances.select_related('beneficiary'):
+            writer.writerow([
+                p.beneficiary.full_name,
+                p.beneficiary.get_current_level_display(),
+                f"{p.average_score:.1f}%",
+                p.rank,
+                p.term,
+                p.academic_year
+            ])
+        
+        return response
+    
+    elif format_type == 'pdf':
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="performance_report_{year}_{term}.pdf"'
+        
+        doc = SimpleDocTemplate(response, pagesize=letter)
+        elements = []
+        
+        data = [['Name', 'Education Level', 'Average Score', 'Rank', 'Term', 'Year']]
+        for p in performances.select_related('beneficiary'):
+            data.append([
+                p.beneficiary.full_name,
+                p.beneficiary.get_current_level_display(),
+                f"{p.average_score:.1f}%",
+                p.rank,
+                p.term,
+                p.academic_year
+            ])
+        
+        table = Table(data)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        
+        elements.append(table)
+        doc.build(elements)
+        
+        return response
     
     return redirect('performance_dashboard')
+
+# ... (other views remain unchanged)
 
 @login_required
 @transaction.atomic
 def add_performance(request):
     if request.method == 'POST':
         try:
-            # Extract AcademicPerformance data
             beneficiary_id = request.POST.get('beneficiary')
             term = request.POST.get('term')
             academic_year = request.POST.get('academic_year')
@@ -823,24 +905,20 @@ def add_performance(request):
             comments = request.POST.get('comments', '')
             report_file = request.FILES.get('report_file')
 
-            # Validate required fields
             if not all([beneficiary_id, term, academic_year, average_score, rank, report_file]):
                 messages.error(request, "All required fields must be filled, including the PDF report.")
                 return redirect('add_performance')
 
-            # Validate file type
             if report_file and not report_file.name.lower().endswith('.pdf'):
                 messages.error(request, "Uploaded file must be a PDF.")
                 return redirect('add_performance')
 
-            # Get beneficiary
             try:
                 beneficiary = Beneficiary.objects.get(id=beneficiary_id)
             except Beneficiary.DoesNotExist:
                 messages.error(request, "Selected beneficiary does not exist.")
                 return redirect('add_performance')
 
-            # Validate numeric fields
             try:
                 average_score = float(average_score)
                 if not 0 <= average_score <= 100:
@@ -852,7 +930,6 @@ def add_performance(request):
                 messages.error(request, str(e))
                 return redirect('add_performance')
 
-            # Create AcademicPerformance
             academic_performance = AcademicPerformance.objects.create(
                 beneficiary=beneficiary,
                 term=term,
@@ -863,7 +940,6 @@ def add_performance(request):
                 report_file=report_file
             )
 
-            # Extract SubjectPerformance data
             subject_ids = request.POST.getlist('subject[]')
             scores = request.POST.getlist('score[]')
             grades = request.POST.getlist('grade[]')
@@ -897,14 +973,6 @@ def add_performance(request):
                     messages.error(request, str(e))
                     return redirect('add_performance')
 
-            # Log activity
-            ActivityLog.objects.create(
-                activity_type='performance',
-                description=f"Added performance record for {beneficiary.full_name} - Term {term} {academic_year} with PDF report",
-                recorded_by=request.user,
-                related_beneficiary=beneficiary
-            )
-
             messages.success(request, f"Performance record for {beneficiary.full_name} added successfully.")
             return redirect('performance_dashboard')
 
@@ -912,7 +980,6 @@ def add_performance(request):
             messages.error(request, f"An error occurred: {str(e)}")
             return redirect('add_performance')
 
-    # GET request: Render form
     context = {
         'beneficiaries': Beneficiary.objects.filter(is_active=True).order_by('last_name', 'first_name'),
         'subjects': Subject.objects.all().order_by('name'),
@@ -932,7 +999,6 @@ def performance_detail(request, pk):
     academic_performances = AcademicPerformance.objects.filter(beneficiary=beneficiary).order_by('-academic_year', '-term')
     subject_performances = SubjectPerformance.objects.filter(beneficiary=beneficiary).order_by('-academic_year', '-term', 'subject__name')
     
-    # Calculate metrics for the beneficiary
     avg_score = academic_performances.aggregate(avg=Avg('average_score'))['avg'] or 0
     top_score = academic_performances.aggregate(max=Max('average_score'))['max'] or 0
     subject_averages = subject_performances.values('subject__name').annotate(
@@ -950,27 +1016,177 @@ def performance_detail(request, pk):
     }
     
     return render(request, 'performance_detail.html', context)
-# ... (previous views remain unchanged, adding add_performance_note)
+
+@login_required
+@transaction.atomic
+def edit_performance(request, pk):
+    performance = get_object_or_404(AcademicPerformance, pk=pk)
+    subject_performances = SubjectPerformance.objects.filter(
+        beneficiary=performance.beneficiary,
+        term=performance.term,
+        academic_year=performance.academic_year
+    )
+
+    if request.method == 'POST':
+        try:
+            term = request.POST.get('term')
+            academic_year = request.POST.get('academic_year')
+            average_score = request.POST.get('average_score')
+            rank = request.POST.get('rank')
+            comments = request.POST.get('comments', '')
+            report_file = request.FILES.get('report_file')
+
+            if not all([term, academic_year, average_score, rank]):
+                messages.error(request, "All required fields must be filled.")
+                return redirect('edit_performance', pk=pk)
+
+            if report_file and not report_file.name.lower().endswith('.pdf'):
+                messages.error(request, "Uploaded file must be a PDF.")
+                return redirect('edit_performance', pk=pk)
+
+            try:
+                average_score = float(average_score)
+                if not 0 <= average_score <= 100:
+                    raise ValueError("Average score must be between 0 and 100.")
+                rank = int(rank)
+                if rank < 1:
+                    raise ValueError("Rank must be a positive integer.")
+            except ValueError as e:
+                messages.error(request, str(e))
+                return redirect('edit_performance', pk=pk)
+
+            performance.term = term
+            performance.academic_year = academic_year
+            performance.average_score = average_score
+            performance.rank = rank
+            performance.comments = comments
+            if report_file:
+                if performance.report_file:
+                    if os.path.isfile(performance.report_file.path):
+                        os.remove(performance.report_file.path)
+                performance.report_file = report_file
+            performance.save()
+
+            subject_ids = request.POST.getlist('subject[]')
+            scores = request.POST.getlist('score[]')
+            grades = request.POST.getlist('grade[]')
+            subject_comments = request.POST.getlist('subject_comments[]')
+            subject_performance_ids = request.POST.getlist('subject_performance_id[]')
+
+            if not subject_ids:
+                messages.error(request, "At least one subject performance record is required.")
+                return redirect('edit_performance', pk=pk)
+
+            existing_ids = set(subject_performance_ids)
+            current_ids = set(str(sp.id) for sp in subject_performances)
+
+            for sp_id in current_ids - existing_ids:
+                if sp_id:
+                    SubjectPerformance.objects.filter(id=sp_id).delete()
+
+            for i, subject_id in enumerate(subject_ids):
+                try:
+                    subject = Subject.objects.get(id=subject_id)
+                    score = float(scores[i])
+                    if not 0 <= score <= 100:
+                        raise ValueError(f"Score for {subject.name} must be between 0 and 100.")
+                    grade = grades[i].upper()
+                    if grade not in ['A', 'B', 'C', 'D', 'E', 'F']:
+                        raise ValueError(f"Invalid grade for {subject.name}. Use A, B, C, D, E, or F.")
+                    comment = subject_comments[i] if i < len(subject_comments) else ''
+                    sp_id = subject_performance_ids[i] if i < len(subject_performance_ids) else ''
+
+                    if sp_id:
+                        sp = SubjectPerformance.objects.get(id=sp_id)
+                        sp.subject = subject
+                        sp.score = score
+                        sp.grade = grade
+                        sp.comments = comment
+                        sp.term = term
+                        sp.academic_year = academic_year
+                        sp.save()
+                    else:
+                        SubjectPerformance.objects.create(
+                            beneficiary=performance.beneficiary,
+                            subject=subject,
+                            term=term,
+                            academic_year=academic_year,
+                            score=score,
+                            grade=grade,
+                            comments=comment
+                        )
+                except (Subject.DoesNotExist, SubjectPerformance.DoesNotExist, ValueError) as e:
+                    messages.error(request, str(e))
+                    return redirect('edit_performance', pk=pk)
+
+            messages.success(request, f"Performance record for {performance.beneficiary.full_name} updated successfully.")
+            return redirect('performance_detail', pk=performance.beneficiary.id)
+
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+            return redirect('edit_performance', pk=pk)
+
+    context = {
+        'performance': performance,
+        'subject_performances': subject_performances,
+        'beneficiaries': Beneficiary.objects.filter(is_active=True).order_by('last_name', 'first_name'),
+        'subjects': Subject.objects.all().order_by('name'),
+        'years_range': range(2020, datetime.now().year + 1),
+        'term_choices': [
+            ('term1', 'Term 1'),
+            ('term2', 'Term 2'),
+            ('term3', 'Term 3')
+        ],
+        'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+    }
+    return render(request, 'edit_performance.html', context)
+
+@login_required
+def delete_performance(request, pk):
+    performance = get_object_or_404(AcademicPerformance, pk=pk)
+    beneficiary = performance.beneficiary
+    term = performance.term
+    academic_year = performance.academic_year
+
+    if request.method == 'POST':
+        try:
+            SubjectPerformance.objects.filter(
+                beneficiary=beneficiary,
+                term=term,
+                academic_year=academic_year
+            ).delete()
+
+            if performance.report_file:
+                if os.path.isfile(performance.report_file.path):
+                    os.remove(performance.report_file.path)
+
+            performance.delete()
+
+            messages.success(request, f"Performance record for {beneficiary.full_name} deleted successfully.")
+            return redirect('performance_detail', pk=beneficiary.id)
+
+        except Exception as e:
+            messages.error(request, f"An error occurred: {str(e)}")
+            return redirect('performance_detail', pk=beneficiary.id)
+
+    return redirect('performance_detail', pk=beneficiary.id)
 
 @login_required
 def add_performance_note(request, pk):
-    beneficiary = get_object_or_404(Beneficiary, pk=pk)
+    performance = get_object_or_404(AcademicPerformance, pk=pk)
     if request.method == 'POST':
         note = request.POST.get('note')
         if note:
-            ActivityLog.objects.create(
-                activity_type='other',
-                description=f"Added note for {beneficiary.full_name}: {note}",
-                recorded_by=request.user,
-                related_beneficiary=beneficiary
-            )
-            messages.success(request, f"Note added for {beneficiary.full_name}.")
-            return redirect('performance_detail', pk=pk)
+            performance.comments = (performance.comments or '') + '\n' + note
+            performance.save()
+            
+            messages.success(request, "Note added successfully.")
+            return redirect('performance_detail', pk=performance.beneficiary.id)
         else:
             messages.error(request, "Note cannot be empty.")
     
     context = {
-        'beneficiary': beneficiary,
+        'performance': performance,
         'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
     }
     return render(request, 'add_performance_note.html', context)

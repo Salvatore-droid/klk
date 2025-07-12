@@ -31,6 +31,13 @@
         --border-radius-xl: 1rem;
     }
 
+    .main-content {
+        flex: 1;
+        margin-left: var(--sidebar-width);
+        padding: 2rem;
+        transition: var(--transition);
+    }
+
     .main-header {
         display: flex;
         justify-content: space-between;
@@ -42,7 +49,7 @@
     }
 
     .main-header h1 {
-        font-size: 1.75rem;
+        font-size: 2.25rem;
         font-weight: 700;
         color: var(--dark);
         position: relative;
@@ -54,43 +61,76 @@
         content: '';
         position: absolute;
         left: 0;
-        bottom: 0;
-        width: 50px;
-        height: 3px;
-        background: linear-gradient(90deg, var(--primary), --accent);
+        bottom: -0.25rem;
+        width: 70px;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary), var(--accent));
         border-radius: 2px;
     }
 
     .main-header p {
-        font-size: 0.95rem;
+        font-size: 1rem;
         color: var(--gray);
         margin-top: 0.5rem;
-        line-height: 1.5;
+        line-height: 1.6;
     }
 
     .header-right {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: 1.5rem;
+    }
+
+    .search-bar {
+        position: relative;
+    }
+
+    .search-bar input {
+        padding: 0.7rem 1.2rem 0.7rem 3rem;
+        border-radius: 50px;
+        border: 1px solid var(--gray-light);
+        background-color: var(--white);
+        font-size: 0.95rem;
+        width: 260px;
+        transition: var(--transition);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .search-bar input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.2);
+        width: 300px;
+    }
+
+    .search-bar i {
+        position: absolute;
+        left: 1.25rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray);
+        font-size: 1rem;
     }
 
     .notification-btn, .profile-btn {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 40px;
-        height: 40px;
-        border-radius: var(--border-radius);
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
         background-color: var(--white);
         border: 1px solid var(--gray-light);
         color: var(--gray);
         transition: var(--transition);
+        box-shadow: var(--shadow-sm);
     }
 
     .notification-btn:hover, .profile-btn:hover {
         background-color: var(--primary-light);
         color: var(--primary);
-        box-shadow: var(--shadow-sm);
+        box-shadow: var(--shadow);
+        transform: translateY(-2px);
     }
 
     .notification-badge {
@@ -100,16 +140,18 @@
         background-color: var(--danger);
         color: var(--white);
         border-radius: 50%;
-        padding: 0.2rem 0.5rem;
-        font-size: 0.75rem;
-        font-weight: 600;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        border: 2px solid var(--lighter);
     }
 
     .profile-btn img {
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         object-fit: cover;
+        border: 2px solid var(--primary-light);
     }
 
     .tooltip {
@@ -119,14 +161,14 @@
     .tooltip::after {
         content: attr(data-tooltip);
         position: absolute;
-        top: -30px;
+        top: -35px;
         left: 50%;
         transform: translateX(-50%);
         background-color: var(--dark);
         color: var(--white);
-        padding: 0.4rem 0.8rem;
+        padding: 0.5rem 1rem;
         border-radius: var(--border-radius);
-        font-size: 0.8rem;
+        font-size: 0.85rem;
         white-space: nowrap;
         opacity: 0;
         visibility: hidden;
@@ -142,8 +184,8 @@
         background-color: var(--white);
         border-radius: var(--border-radius-lg);
         box-shadow: var(--shadow);
-        padding: 2rem;
-        margin-bottom: 2rem;
+        padding: 2.5rem;
+        margin-bottom: 2.5rem;
         animation: fadeIn 0.8s ease;
     }
 
@@ -155,11 +197,11 @@
     }
 
     .analytics-header h2 {
-        font-size: 1.5rem;
+        font-size: 1.75rem;
         font-weight: 600;
         color: var(--dark);
         position: relative;
-        padding-left: 1rem;
+        padding-left: 1.2rem;
         letter-spacing: 0.3px;
     }
 
@@ -169,8 +211,8 @@
         left: 0;
         top: 50%;
         transform: translateY(-50%);
-        width: 4px;
-        height: 24px;
+        width: 5px;
+        height: 28px;
         background: linear-gradient(to bottom, var(--primary), var(--accent));
         border-radius: 2px;
     }
@@ -179,7 +221,7 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 0.75rem 1.5rem;
+        padding: 0.8rem 1.6rem;
         border-radius: var(--border-radius);
         font-size: 0.95rem;
         font-weight: 500;
@@ -221,15 +263,15 @@
 
     .metrics-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.75rem;
+        margin-bottom: 2.5rem;
     }
 
     .metric-card {
         background-color: var(--white);
         border-radius: var(--border-radius-lg);
-        padding: 1.75rem;
+        padding: 2rem;
         box-shadow: var(--shadow);
         transition: var(--transition);
         position: relative;
@@ -244,7 +286,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: linear-gradient(135deg, rgba(67, 97, 238, 0.1), rgba(255, 255, 255, 0));
+        background: linear-gradient(135deg, rgba(67, 97, 238, 0.15), rgba(255, 255, 255, 0));
         z-index: -1;
         opacity: 0;
         transition: var(--transition);
@@ -259,23 +301,36 @@
         opacity: 1;
     }
 
+    .metric-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--white);
+        font-size: 1.6rem;
+        margin-bottom: 1rem;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transition: var(--transition);
+    }
+
+    .metric-card:hover .metric-icon {
+        transform: scale(1.1);
+    }
+
     .metric-title {
         font-size: 0.95rem;
         font-weight: 500;
         color: var(--gray);
         margin-bottom: 0.5rem;
-        display: flex;
-        align-items: center;
-    }
-
-    .metric-title i {
-        margin-right: 8px;
-        font-size: 1rem;
-        color: var(--primary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .metric-value {
-        font-size: 1.75rem;
+        font-size: 1.85rem;
         font-weight: 700;
         color: var(--dark);
         margin-bottom: 0.5rem;
@@ -285,6 +340,122 @@
         font-size: 1rem;
         font-weight: 500;
         color: var(--gray);
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--dark);
+        letter-spacing: 0.3px;
+    }
+
+    .form-control, .form-select {
+        width: 100%;
+        padding: 0.8rem 1.2rem;
+        border-radius: var(--border-radius);
+        border: 1px solid var(--gray-light);
+        background-color: var(--white);
+        font-size: 0.95rem;
+        transition: var(--transition);
+    }
+
+    .form-control:focus, .form-select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.2);
+    }
+
+    .form-select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236c757d' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 16px 12px;
+    }
+
+    .charts-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+        gap: 1.75rem;
+        margin-bottom: 2.5rem;
+        animation: fadeIn 0.8s ease 0.2s both;
+    }
+
+    .chart-card {
+        background-color: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 2rem;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+    }
+
+    .chart-card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .chart-header h3 {
+        font-size: 1.35rem;
+        font-weight: 600;
+        color: var(--dark);
+        position: relative;
+        padding-left: 1.2rem;
+    }
+
+    .chart-header h3::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 5px;
+        height: 22px;
+        background: linear-gradient(to bottom, var(--primary), var(--accent));
+        border-radius: 2px;
+    }
+
+    .chart-tabs {
+        display: flex;
+        gap: 0.6rem;
+        background-color: var(--lighter);
+        border-radius: 50px;
+        padding: 0.3rem;
+    }
+
+    .chart-tab {
+        padding: 0.6rem 1.2rem;
+        border-radius: 50px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        border: none;
+        background-color: transparent;
+        color: var(--gray);
+    }
+
+    .chart-tab.active {
+        background-color: var(--white);
+        color: var(--primary);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .chart-container {
+        position: relative;
+        height: 340px;
+        width: 100%;
     }
 
     .table-responsive {
@@ -300,21 +471,25 @@
         background-color: var(--white);
         border-radius: var(--border-radius);
         overflow: hidden;
+        position: relative;
     }
 
     .performance-table thead th {
-        padding: 1rem;
+        padding: 1.2rem;
         font-weight: 600;
         color: var(--dark);
-        background-color: var(--lighter);
+        background: linear-gradient(135deg, var(--primary-light), var(--white));
         border-bottom: 2px solid var(--gray-light);
         text-align: left;
         font-size: 0.95rem;
         letter-spacing: 0.3px;
+        position: sticky;
+        top: 0;
+        z-index: 1;
     }
 
     .performance-table tbody td {
-        padding: 1rem;
+        padding: 1.2rem;
         border-bottom: 1px solid var(--gray-light);
         vertical-align: middle;
         font-size: 0.95rem;
@@ -322,18 +497,34 @@
     }
 
     .performance-table tbody tr {
-        transition: background-color 0.2s ease;
+        transition: background-color 0.2s ease, transform 0.2s ease;
     }
 
     .performance-table tbody tr:hover {
         background-color: var(--primary-light);
+        transform: translateY(-2px);
     }
 
-    .performance-score {
-        display: inline-block;
-        padding: 0.5rem 1rem;
+    .performer-image {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--primary-light);
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition);
+    }
+
+    .performance-table tbody tr:hover .performer-image {
+        transform: scale(1.1);
+    }
+
+    .performer-score {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.6rem 1.2rem;
         border-radius: 50px;
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -364,9 +555,40 @@
         border: 1px solid rgba(247, 37, 133, 0.3);
     }
 
-    .table-actions {
+    .performer-improvement {
         display: flex;
+        align-items: center;
         gap: 0.5rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .performer-improvement.positive {
+        color: var(--success);
+    }
+
+    .performer-improvement.negative {
+        color: var(--danger);
+    }
+
+    .performer-improvement i {
+        font-size: 1rem;
+    }
+
+    .performer-sparkline {
+        width: 80px;
+        height: 30px;
+    }
+
+    .performer-badge {
+        display: inline-block;
+        padding: 0.4rem 0.8rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--white);
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        box-shadow: var(--shadow-sm);
     }
 
     .action-btn {
@@ -375,12 +597,13 @@
         justify-content: center;
         width: 36px;
         height: 36px;
-        border-radius: var(--border-radius);
+        border-radius: 50%;
         background-color: var(--white);
         border: 1px solid var(--gray-light);
         color: var(--gray);
         transition: var(--transition);
         text-decoration: none;
+        margin: 0 0.25rem;
     }
 
     .action-btn.view:hover {
@@ -395,9 +618,15 @@
         border-color: var(--success);
     }
 
+    .action-btn.note:hover {
+        background-color: rgba(248, 150, 30, 0.1);
+        color: var(--warning);
+        border-color: var(--warning);
+    }
+
     .empty-state {
         text-align: center;
-        padding: 3rem 2rem;
+        padding: 3.5rem 2rem;
         background-color: var(--lighter);
         border-radius: var(--border-radius-lg);
         margin-top: 1.5rem;
@@ -405,69 +634,76 @@
     }
 
     .empty-state i {
-        font-size: 2.5rem;
+        font-size: 2.75rem;
         color: var(--gray);
         margin-bottom: 1rem;
         opacity: 0.7;
     }
 
     .empty-state h3 {
-        font-size: 1.25rem;
+        font-size: 1.35rem;
         font-weight: 600;
         color: var(--dark);
         margin-bottom: 0.75rem;
     }
 
     .empty-state p {
-        font-size: 0.95rem;
+        font-size: 1rem;
         color: var(--gray);
         max-width: 600px;
         margin: 0 auto 1.5rem;
         line-height: 1.6;
     }
 
-    .form-group {
-        margin-bottom: 1.5rem;
+    .export-dropdown {
+        position: relative;
+        display: inline-block;
     }
 
-    .form-group label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: var(--dark);
-        letter-spacing: 0.3px;
+    .export-dropdown-toggle {
+        cursor: pointer;
     }
 
-    .form-control, .form-select {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        border-radius: var(--border-radius);
-        border: 1px solid var(--gray-light);
+    .export-dropdown-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
         background-color: var(--white);
-        font-size: 0.95rem;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        min-width: 150px;
+        padding: 0.5rem 0;
+        z-index: 1000;
+        display: none;
+    }
+
+    .export-dropdown-menu.show {
+        display: block;
+    }
+
+    .export-dropdown-item {
+        display: block;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        color: var(--dark);
+        text-decoration: none;
         transition: var(--transition);
     }
 
-    .form-control:focus, .form-select:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.2);
-    }
-
-    .form-select {
-        appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236c757d' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 0.75rem center;
-        background-size: 16px 12px;
+    .export-dropdown-item:hover {
+        background-color: var(--primary-light);
+        color: var(--primary);
     }
 
     @media (max-width: 992px) {
+        .main-content {
+            margin-left: 0;
+        }
+
         .main-header {
             flex-direction: column;
             align-items: flex-start;
-            gap: 1rem;
+            gap: 1.5rem;
         }
 
         .header-right {
@@ -476,6 +712,10 @@
         }
 
         .metrics-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .charts-section {
             grid-template-columns: 1fr;
         }
     }
@@ -489,13 +729,23 @@
 
         .performance-table thead th,
         .performance-table tbody td {
-            min-width: 120px;
+            min-width: 100px;
+        }
+
+        .performer-image {
+            width: 32px;
+            height: 32px;
+        }
+
+        .performer-sparkline {
+            width: 60px;
+            height: 24px;
         }
     }
 
     @media (max-width: 576px) {
         .main-header h1 {
-            font-size: 1.5rem;
+            font-size: 1.75rem;
         }
 
         .main-header p {
@@ -503,17 +753,25 @@
         }
 
         .btn {
-            padding: 0.65rem 1rem;
+            padding: 0.7rem 1.2rem;
             font-size: 0.9rem;
         }
 
         .form-control, .form-select {
             font-size: 0.9rem;
-            padding: 0.65rem 0.9rem;
+            padding: 0.7rem 1rem;
         }
 
         .analytics-header h2 {
-            font-size: 1.25rem;
+            font-size: 1.35rem;
+        }
+
+        .search-bar input {
+            width: 100%;
+        }
+
+        .search-bar input:focus {
+            width: 100%;
         }
     }
 </style>
@@ -524,9 +782,13 @@
 <header class="main-header">
     <div class="header-left">
         <h1>Performance Dashboard</h1>
-        <p>Monitor and analyze academic performance metrics</p>
+        <p>Monitor and analyze academic performance metrics for your beneficiaries</p>
     </div>
     <div class="header-right">
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Search students, subjects...">
+            <i class="fas fa-search"></i>
+        </div>
         <div class="notification-btn tooltip" data-tooltip="Notifications">
             <i class="fas fa-bell"></i>
             <span class="notification-badge">{{ unread_notifications }}</span>
@@ -544,9 +806,20 @@
 <section class="analytics-container">
     <div class="analytics-header">
         <h2>Performance Filters</h2>
-        <a href="{% url 'add_performance' %}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Add Performance
-        </a>
+        <div>
+            <a href="{% url 'add_performance' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Performance
+            </a>
+            <div class="export-dropdown">
+                <button class="btn btn-secondary export-dropdown-toggle">
+                    <i class="fas fa-download"></i> Export Report
+                </button>
+                <div class="export-dropdown-menu">
+                    <a href="{% url 'export_performance_report' %}?format=csv" class="export-dropdown-item">Export as CSV</a>
+                    <a href="{% url 'export_performance_report' %}?format=pdf" class="export-dropdown-item">Export as PDF</a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <form method="GET" action="{% url 'performance_dashboard' %}">
@@ -596,28 +869,58 @@
     </form>
 </section>
 
-<section class="analytics-container">
-    <div class="analytics-header">
-        <h2>Performance Metrics</h2>
+<section class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-icon" style="background: linear-gradient(135deg, #4361ee 0%, #3a56d4 100%);">
+            <i class="fas fa-graduation-cap"></i>
+        </div>
+        <div class="metric-title">Average Score</div>
+        <div class="metric-value">{{ avg_score|floatformat:1 }}%</div>
+        <div class="metric-value subtext">Across all students</div>
     </div>
-    <div class="metrics-grid">
-        <div class="metric-card">
-            <div class="metric-title">
-                <i class="fas fa-graduation-cap"></i> Average Score
-            </div>
-            <div class="metric-value">{{ avg_score|floatformat:1 }}%</div>
+    <div class="metric-card">
+        <div class="metric-icon" style="background: linear-gradient(135deg, #3f37c9 0%, #4cc9f0 100%);">
+            <i class="fas fa-medal"></i>
         </div>
-        <div class="metric-card">
-            <div class="metric-title">
-                <i class="fas fa-medal"></i> Top Score
-            </div>
-            <div class="metric-value">{{ top_score|floatformat:1 }}%</div>
+        <div class="metric-title">Top Score</div>
+        <div class="metric-value">{{ top_score|floatformat:1 }}%</div>
+        <div class="metric-value subtext">Highest individual score</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-icon" style="background: linear-gradient(135deg, #4895ef 0%, #4cc9f0 100%);">
+            <i class="fas fa-percentage"></i>
         </div>
-        <div class="metric-card">
-            <div class="metric-title">
-                <i class="fas fa-percentage"></i> Passing Rate
+        <div class="metric-title">Passing Rate</div>
+        <div class="metric-value">{{ passing_rate|floatformat:1 }}%</div>
+        <div class="metric-value subtext">Students above 50%</div>
+    </div>
+</section>
+
+<section class="charts-section">
+    <div class="chart-card">
+        <div class="chart-header">
+            <h3>Performance Distribution</h3>
+            <div class="chart-tabs">
+                <button class="chart-tab active" data-type="overall">Overall</button>
+                <button class="chart-tab" data-type="by_level">By Level</button>
+                <button class="chart-tab" data-type="by_subject">By Subject</button>
             </div>
-            <div class="metric-value">{{ passing_rate|floatformat:1 }}%</div>
+        </div>
+        <div class="chart-container">
+            <canvas id="performanceDistributionChart"></canvas>
+        </div>
+    </div>
+    <div class="chart-card">
+        <div class="chart-header">
+            <h3>Performance Trends</h3>
+            <div class="chart-tabs">
+                <button class="chart-tab active" data-term="term1">Term 1</button>
+                <button class="chart-tab" data-term="term2">Term 2</button>
+                <button class="chart-tab" data-term="term3">Term 3</button>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="performanceTrendsChart"></canvas>
         </div>
     </div>
 </section>
@@ -625,25 +928,51 @@
 <section class="analytics-container">
     <div class="analytics-header">
         <h2>Top Performers</h2>
+        <div>
+            <a href="{% url 'performance_dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-list"></i> View All
+            </a>
+            <div class="export-dropdown">
+                <button class="btn btn-secondary export-dropdown-toggle">
+                    <i class="fas fa-download"></i> Export
+                </button>
+                <div class="export-dropdown-menu">
+                    <a href="{% url 'export_performance_report' %}?format=csv" class="export-dropdown-item">Export as CSV</a>
+                    <a href="{% url 'export_performance_report' %}?format=pdf" class="export-dropdown-item">Export as PDF</a>
+                </div>
+            </div>
+        </div>
     </div>
     <div class="table-responsive">
         <table class="performance-table">
             <thead>
                 <tr>
+                    <th style="width: 60px;">Photo</th>
                     <th>Name</th>
                     <th>Education Level</th>
-                    <th>Average Score</th>
+                    <th>Score</th>
                     <th>Improvement</th>
+                    <th>Trend</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for performer in top_performers %}
-                <tr>
-                    <td>{{ performer.beneficiary.full_name }}</td>
+                <tr data-name="{{ performer.beneficiary.full_name|lower }}">
+                    <td>
+                        <img src="{% if performer.beneficiary.profile_picture %}{{ performer.beneficiary.profile_picture.url }}{% else %}{% static 'images/avatar.png' %}{% endif %}" alt="{{ performer.beneficiary.full_name }}" class="performer-image">
+                    </td>
+                    <td>
+                        {{ performer.beneficiary.full_name }}
+                        {% if performer.rank == 1 %}
+                        <span class="performer-badge">#1</span>
+                        {% elif performer.improvement >= 10 %}
+                        <span class="performer-badge">Most Improved</span>
+                        {% endif %}
+                    </td>
                     <td>{{ performer.beneficiary.get_current_level_display }}</td>
                     <td>
-                        <span class="performance-score 
+                        <span class="performer-score 
                             {% if performer.average_score >= 85 %}score-excellent
                             {% elif performer.average_score >= 70 %}score-good
                             {% elif performer.average_score >= 50 %}score-average
@@ -652,24 +981,29 @@
                         </span>
                     </td>
                     <td>
-                        <span class="{% if performer.is_positive %}text-success{% else %}text-danger{% endif %}">
-                            {% if performer.is_positive %}+{% endif %}{{ performer.improvement|floatformat:1 }}%
+                        <span class="performer-improvement {% if performer.is_positive %}positive{% else %}negative{% endif %}">
+                            <i class="fas {% if performer.is_positive %}fa-arrow-up{% else %}fa-arrow-down{% endif %}"></i>
+                            {{ performer.improvement|floatformat:1 }}%
                         </span>
                     </td>
                     <td>
-                        <div class="table-actions">
-                            <a href="{% url 'performance_detail' pk=performer.beneficiary.id %}" class="action-btn view" title="View Performance">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <a href="{% url 'add_performance_note' pk=performer.beneficiary.id %}" class="action-btn edit" title="Add Note">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                        </div>
+                        <div class="performer-sparkline" data-scores="{{ performer.score_history|safe }}"></div>
+                    </td>
+                    <td>
+                        <a href="{% url 'performance_detail' pk=performer.beneficiary.id %}" class="action-btn view tooltip" data-tooltip="View Performance">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{% url 'edit_performance' pk=performer.academic_performance_id %}" class="action-btn edit tooltip" data-tooltip="Edit Performance">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'add_performance_note' pk=performer.academic_performance_id %}" class="action-btn note tooltip" data-tooltip="Add Note">
+                            <i class="fas fa-sticky-note"></i>
+                        </a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5">
+                    <td colspan="7">
                         <div class="empty-state">
                             <i class="fas fa-users"></i>
                             <h3>No Top Performers</h3>
@@ -704,7 +1038,7 @@
                 <tr>
                     <td>{{ subject.subject__name }}</td>
                     <td>
-                        <span class="performance-score 
+                        <span class="performer-score 
                             {% if subject.avg_score >= 85 %}score-excellent
                             {% elif subject.avg_score >= 70 %}score-good
                             {% elif subject.avg_score >= 50 %}score-average
@@ -730,66 +1064,196 @@
     </div>
 </section>
 
-<section class="analytics-container">
-    <div class="analytics-header">
-        <h2>Performance Trends</h2>
-    </div>
-    <canvas id="performanceTrendsChart"></canvas>
-</section>
-
 <script>
 $(document).ready(function() {
-    // Performance Trends Chart
-    const performanceTrendsData = {{ performance_trends|safe }};
-    const terms = performanceTrendsData.map(item => `${item.term} ${item.academic_year}`);
-    const scores = performanceTrendsData.map(item => item.avg_score || 0);
+    // Performance Distribution Chart
+    const distributionCtx = document.getElementById('performanceDistributionChart').getContext('2d');
+    let distributionChart;
 
-    new Chart(document.getElementById('performanceTrendsChart'), {
-        type: 'line',
-        data: {
-            labels: terms,
-            datasets: [{
-                label: 'Average Score',
-                data: scores,
-                borderColor: 'rgba(67, 97, 238, 1)',
-                backgroundColor: 'rgba(67, 97, 238, 0.2)',
-                fill: true,
-                tension: 0.4,
-                pointBackgroundColor: 'rgba(67, 97, 238, 1)',
-                pointBorderColor: '#fff',
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: 'rgba(67, 97, 238, 1)',
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top',
-                },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false,
+    function updateDistributionChart(dataType) {
+        fetch(`/performance/data/?type=distribution&data_type=${dataType}&education_level=${$('#education_level').val()}&term=${$('#term').val()}&year=${$('#year').val()}&subject=${$('#subject').val()}`)
+            .then(response => response.json())
+            .then(data => {
+                if (distributionChart) {
+                    distributionChart.destroy();
                 }
-            },
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Term & Year'
-                    }
-                },
-                y: {
-                    title: {
-                        display: true,
-                        text: 'Average Score (%)'
+                distributionChart = new Chart(distributionCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels || ['Excellent (85-100)', 'Good (70-84)', 'Average (50-69)', 'Poor (<50)'],
+                        datasets: [{
+                            label: 'Number of Students',
+                            data: data.values || [0, 0, 0, 0],
+                            backgroundColor: [
+                                'rgba(76, 201, 240, 0.6)',
+                                'rgba(67, 97, 238, 0.6)',
+                                'rgba(248, 150, 30, 0.6)',
+                                'rgba(247, 37, 133, 0.6)'
+                            ],
+                            borderColor: [
+                                'rgba(76, 201, 240, 1)',
+                                'rgba(67, 97, 238, 1)',
+                                'rgba(248, 150, 30, 1)',
+                                'rgba(247, 37, 133, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
                     },
-                    beginAtZero: true,
-                    max: 100
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Number of Students'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: dataType === 'overall' ? 'Score Range' : dataType === 'by_level' ? 'Education Level' : 'Subject'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            });
+    }
+
+    // Performance Trends Chart
+    const trendsCtx = document.getElementById('performanceTrendsChart').getContext('2d');
+    let trendsChart;
+
+    function updateTrendsChart(term) {
+        fetch(`/performance/data/?type=trend&term=${term}&education_level=${$('#education_level').val()}&year=${$('#year').val()}&subject=${$('#subject').val()}`)
+            .then(response => response.json())
+            .then(data => {
+                if (trendsChart) {
+                    trendsChart.destroy();
+                }
+                trendsChart = new Chart(trendsCtx, {
+                    type: 'line',
+                    data: {
+                        labels: data.data.map(item => `${item.term} ${item.academic_year}`),
+                        datasets: [{
+                            label: 'Average Score',
+                            data: data.data.map(item => item.avg_score || 0),
+                            borderColor: 'rgba(67, 97, 238, 1)',
+                            backgroundColor: 'rgba(67, 97, 238, 0.2)',
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: 'rgba(67, 97, 238, 1)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(67, 97, 238, 1)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Term & Year'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Average Score (%)'
+                                },
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        }
+                    }
+                });
+            });
+    }
+
+    // Initialize charts
+    updateDistributionChart('overall');
+    updateTrendsChart('term1');
+
+    // Chart tab switching
+    $('.chart-tab').on('click', function() {
+        $(this).siblings().removeClass('active');
+        $(this).addClass('active');
+        if ($(this).data('type')) {
+            updateDistributionChart($(this).data('type'));
+        } else if ($(this).data('term')) {
+            updateTrendsChart($(this).data('term'));
+        }
+    });
+
+    // Search functionality for performers
+    $('#search-input').on('input', function() {
+        const query = $(this).val().toLowerCase();
+        $('.performance-table tbody tr').each(function() {
+            const name = $(this).data('name');
+            $(this).toggle(name.includes(query));
+        });
+    });
+
+    // Export dropdown toggle
+    $('.export-dropdown-toggle').on('click', function() {
+        $('.export-dropdown-menu').toggleClass('show');
+    });
+
+    // Close dropdown when clicking outside
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.export-dropdown').length) {
+            $('.export-dropdown-menu').removeClass('show');
+        }
+    });
+
+    // Sparkline charts for performers
+    $('.performer-sparkline').each(function() {
+        const scores = $(this).data('scores') || [0, 0, 0];
+        new Chart(this, {
+            type: 'line',
+            data: {
+                labels: ['T1', 'T2', 'T3'],
+                datasets: [{
+                    data: scores,
+                    borderColor: 'rgba(67, 97, 238, 0.8)',
+                    backgroundColor: 'rgba(67, 97, 238, 0.2)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { display: false },
+                    y: { display: false }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
                 }
             }
-        }
+        });
     });
 });
 </script>
