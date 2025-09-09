@@ -1,0 +1,489 @@
+{% extends 'index.html' %}
+{% load static %}
+
+{% block content %}
+
+<style>
+    .message-inbox {
+        padding: 2rem;
+        animation: fadeIn 0.8s ease;
+    }
+
+    .inbox-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--gray-light);
+    }
+
+    .inbox-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark);
+        position: relative;
+        padding-bottom: 0.5rem;
+    }
+
+    .inbox-header h1::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: -1.5rem;
+        width: 60px;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary), var(--accent));
+        border-radius: 2px;
+    }
+
+    .inbox-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid var(--gray-light);
+    }
+
+    .tab-item {
+        padding: 1rem 1.5rem;
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-weight: 500;
+        color: var(--gray);
+        position: relative;
+        transition: var(--transition);
+    }
+
+    .tab-item:hover {
+        color: var(--primary);
+    }
+
+    .tab-item.active {
+        color: var(--primary);
+    }
+
+    .tab-item.active::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background-color: var(--primary);
+    }
+
+    .tab-badge {
+        margin-left: 0.5rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 50px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        background-color: var(--primary);
+        color: var(--white);
+    }
+
+    .search-container {
+        background-color: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+    }
+
+    .search-form {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--gray-light);
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.2);
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        border: none;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background-color: var(--primary);
+        color: var(--white);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+
+    .message-item {
+        background-color: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+        cursor: pointer;
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .message-item:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-2px);
+    }
+
+    .message-item.unread {
+        border-left: 4px solid var(--primary);
+    }
+
+    .message-checkbox {
+        margin-top: 0.5rem;
+    }
+
+    .message-content {
+        flex: 1;
+    }
+
+    .message-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.5rem;
+    }
+
+    .message-sender {
+        font-weight: 600;
+        color: var(--dark);
+    }
+
+    .message-time {
+        font-size: 0.85rem;
+        color: var(--gray);
+    }
+
+    .message-subject {
+        font-weight: 600;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .message-preview {
+        color: var(--gray);
+        font-size: 0.9rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .message-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 0.5rem;
+        font-size: 0.8rem;
+        color: var(--gray);
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .important-badge {
+        padding: 0.2rem 0.5rem;
+        border-radius: 50px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        background-color: rgba(248, 150, 30, 0.1);
+        color: var(--warning);
+    }
+
+    .inbox-actions {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .action-select {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--gray-light);
+        border-radius: var(--border-radius);
+        background-color: var(--white);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        background-color: var(--white);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow);
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: var(--gray-light);
+        margin-bottom: 1rem;
+    }
+
+    .empty-state h3 {
+        color: var(--gray);
+        margin-bottom: 0.5rem;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+
+    .page-link {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--gray-light);
+        border-radius: var(--border-radius);
+        color: var(--dark);
+        text-decoration: none;
+        transition: var(--transition);
+    }
+
+    .page-link:hover, .page-link.active {
+        background-color: var(--primary);
+        color: var(--white);
+        border-color: var(--primary);
+    }
+
+    @media (max-width: 768px) {
+        .inbox-tabs {
+            flex-wrap: wrap;
+        }
+        
+        .search-form {
+            flex-direction: column;
+        }
+        
+        .message-header {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .message-meta {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+
+<div class="message-inbox">
+    <div class="inbox-header">
+        <h1>Messages</h1>
+        <p>Manage your private messages and communications</p>
+    </div>
+
+    <div class="inbox-tabs">
+        <a href="?folder=inbox" class="tab-item {% if folder == 'inbox' %}active{% endif %}">
+            Inbox {% if folder == 'inbox' %}<span class="tab-badge">{{ inbox_count }}</span>{% endif %}
+        </a>
+        <a href="?folder=important" class="tab-item {% if folder == 'important' %}active{% endif %}">
+            Important {% if folder == 'important' %}<span class="tab-badge">{{ important_count }}</span>{% endif %}
+        </a>
+        <a href="?folder=sent" class="tab-item {% if folder == 'sent' %}active{% endif %}">
+            Sent
+        </a>
+        <a href="?folder=archived" class="tab-item {% if folder == 'archived' %}active{% endif %}">
+            Archived {% if folder == 'archived' %}<span class="tab-badge">{{ archived_count }}</span>{% endif %}
+        </a>
+    </div>
+
+    <div class="search-container">
+        <form method="get" class="search-form">
+            <input type="hidden" name="folder" value="{{ folder }}">
+            <input type="text" name="search" value="{{ search_query }}" placeholder="Search messages..." class="search-input">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i> Search
+            </button>
+            {% if search_query %}
+            <a href="?folder={{ folder }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Clear
+            </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="inbox-actions">
+        <select class="action-select" id="bulk-action">
+            <option value="">Bulk Actions</option>
+            <option value="mark_read">Mark as Read</option>
+            <option value="mark_unread">Mark as Unread</option>
+            <option value="archive">Archive</option>
+            <option value="delete">Delete</option>
+        </select>
+        <button class="btn btn-primary" id="apply-action">
+            <i class="fas fa-check"></i> Apply
+        </button>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="message-item {% if message.status != 'read' and folder != 'sent' %}unread{% endif %}" onclick="location.href='{% url 'message_detail' message.id %}'">
+            <div class="message-checkbox">
+                <input type="checkbox" name="message_ids" value="{{ message.id }}" class="message-checkbox-input">
+            </div>
+            
+            <div class="message-content">
+                <div class="message-header">
+                    <div class="message-sender">
+                        {% if folder == 'sent' %}
+                            To: {% for recipient in message.recipients.all %}{{ recipient.get_full_name|default:recipient.username }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        {% else %}
+                            From: {{ message.sender.get_full_name|default:message.sender.username }}
+                        {% endif %}
+                    </div>
+                    <div class="message-time">
+                        {{ message.sent_at|timesince }} ago
+                    </div>
+                </div>
+                
+                <div class="message-subject">
+                    {{ message.subject }}
+                    {% if message.is_important %}
+                        <span class="important-badge">Important</span>
+                    {% endif %}
+                </div>
+                
+                <div class="message-preview">
+                    {{ message.body|striptags|truncatewords:30 }}
+                </div>
+                
+                <div class="message-meta">
+                    {% if message.attachments.exists %}
+                    <div class="meta-item">
+                        <i class="fas fa-paperclip"></i>
+                        <span>{{ message.attachments.count }} attachment{{ message.attachments.count|pluralize }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if message.status != 'read' and folder != 'sent' %}
+                    <div class="meta-item">
+                        <i class="fas fa-envelope"></i>
+                        <span>Unread</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <!-- Pagination -->
+        {% if messages.has_other_pages %}
+        <div class="pagination">
+            {% if messages.has_previous %}
+                <a href="?page={{ messages.previous_page_number }}&folder={{ folder }}{% if search_query %}&search={{ search_query }}{% endif %}" class="page-link">Previous</a>
+            {% endif %}
+            
+            {% for num in messages.paginator.page_range %}
+                {% if messages.number == num %}
+                    <span class="page-link active">{{ num }}</span>
+                {% elif num > messages.number|add:'-3' and num < messages.number|add:'3' %}
+                    <a href="?page={{ num }}&folder={{ folder }}{% if search_query %}&search={{ search_query }}{% endif %}" class="page-link">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if messages.has_next %}
+                <a href="?page={{ messages.next_page_number }}&folder={{ folder }}{% if search_query %}&search={{ search_query }}{% endif %}" class="page-link">Next</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-envelope"></i>
+            <h3>No messages found</h3>
+            <p>
+                {% if folder == 'inbox' %}
+                    Your inbox is empty. New messages will appear here.
+                {% elif folder == 'important' %}
+                    You don't have any important messages.
+                {% elif folder == 'sent' %}
+                    You haven't sent any messages yet.
+                {% elif folder == 'archived' %}
+                    Your archive is empty.
+                {% endif %}
+            </p>
+            {% if folder != 'sent' %}
+            <a href="{% url 'send_message' %}" class="btn btn-primary" style="margin-top: 1rem;">
+                <i class="fas fa-paper-plane"></i> Send a Message
+            </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const applyButton = document.getElementById('apply-action');
+    const bulkAction = document.getElementById('bulk-action');
+    
+    applyButton.addEventListener('click', function() {
+        const selectedMessages = document.querySelectorAll('input[name="message_ids"]:checked');
+        const action = bulkAction.value;
+        
+        if (selectedMessages.length === 0) {
+            alert('Please select at least one message.');
+            return;
+        }
+        
+        if (!action) {
+            alert('Please select an action.');
+            return;
+        }
+        
+        // In a real implementation, you would send an AJAX request or form submission
+        // to perform the bulk action on the server
+        const messageIds = Array.from(selectedMessages).map(input => input.value);
+        alert(`Would perform ${action} on messages: ${messageIds.join(', ')}`);
+        
+        // Example of what the AJAX request might look like:
+        /*
+        fetch('/api/messages/bulk-action/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                action: action,
+                message_ids: messageIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error performing bulk action: ' + data.message);
+            }
+        });
+        */
+    });
+});
+</script>
+
+{% endblock %}

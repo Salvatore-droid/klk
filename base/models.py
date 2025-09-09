@@ -421,3 +421,369 @@ class AcademicPerformance(models.Model):
 
     def __str__(self):
         return f"Performance for {self.beneficiary} - Term {self.term} {self.academic_year}"
+
+
+class EventType(models.Model):
+    """
+    Model to categorize events (Academic, Holiday, Exam, Other, etc.)
+    """
+    name = models.CharField(max_length=50)
+    color = models.CharField(max_length=7, default='#4361ee')  # Hex color code
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'Event Type'
+        verbose_name_plural = 'Event Types'
+    
+    def __str__(self):
+        return self.name
+
+
+class AcademicEvent(models.Model):
+    """
+    Model for academic calendar events
+    """
+    PRIORITY_CHOICES = (
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+    )
+    
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    event_type = models.ForeignKey(EventType, on_delete=models.PROTECT, related_name='events')
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    all_day = models.BooleanField(default=False)
+    location = models.CharField(max_length=200, blank=True, null=True)
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_events')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # For recurring events
+    is_recurring = models.BooleanField(default=False)
+    recurrence_pattern = models.CharField(max_length=50, blank=True, null=True)  # e.g., "FREQ=WEEKLY;INTERVAL=1"
+    recurrence_end_date = models.DateTimeField(blank=True, null=True)
+    
+    # For event reminders
+    reminder_sent = models.BooleanField(default=False)
+    reminder_date = models.DateTimeField(blank=True, null=True)
+    
+    class Meta:
+        ordering = ['start_date']
+        verbose_name = 'Academic Event'
+        verbose_name_plural = 'Academic Events'
+    
+    def __str__(self):
+        return f"{self.title} - {self.start_date.strftime('%Y-%m-%d')}"
+    
+    @property
+    def is_past(self):
+        return timezone.now() > self.end_date
+    
+    @property
+    def is_ongoing(self):
+        now = timezone.now()
+        return self.start_date <= now <= self.end_date
+    
+    @property
+    def duration(self):
+        return self.end_date - self.start_date
+
+
+class EventParticipant(models.Model):
+    """
+    Model to track participants for events
+    """
+    ROLE_CHOICES = (
+        ('organizer', 'Organizer'),
+        ('participant', 'Participant'),
+        ('speaker', 'Speaker'),
+        ('guest', 'Guest'),
+    )
+    
+    event = models.ForeignKey(AcademicEvent, on_delete=models.CASCADE, related_name='participants')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='event_participations')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='participant')
+    confirmed = models.BooleanField(default=False)
+    confirmed_at = models.DateTimeField(blank=True, null=True)
+    
+    class Meta:
+        unique_together = ('event', 'user')
+        verbose_name = 'Event Participant'
+        verbose_name_plural = 'Event Participants'
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.event.title}"
+
+
+class EventAttachment(models.Model):
+    """
+    Model for event attachments (documents, images, etc.)
+    """
+    event = models.ForeignKey(AcademicEvent, on_delete=models.CASCADE, related_name='attachments')
+    file = models.FileField(upload_to='event_attachments/%Y/%m/%d/')
+    name = models.CharField(max_length=200)
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-uploaded_at']
+        verbose_name = 'Event Attachment'
+        verbose_name_plural = 'Event Attachments'
+    
+    def __str__(self):
+        return f"{self.name} - {self.event.title}"
+
+
+class CommunicationCategory(models.Model):
+    """
+    Model to categorize communications (Announcements, Notifications, Alerts, etc.)
+    """
+    name = models.CharField(max_length=50)
+    color = models.CharField(max_length=7, default='#4361ee')  # Hex color code
+    icon = models.CharField(max_length=50, default='fas fa-bullhorn')
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        verbose_name = 'Communication Category'
+        verbose_name_plural = 'Communication Categories'
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+
+
+class Announcement(models.Model):
+    """
+    Model for system announcements
+    """
+    PRIORITY_CHOICES = (
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    )
+    
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    category = models.ForeignKey(CommunicationCategory, on_delete=models.PROTECT, related_name='announcements')
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    is_published = models.BooleanField(default=False)
+    publish_date = models.DateTimeField(null=True, blank=True)
+    expiration_date = models.DateTimeField(null=True, blank=True)
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='authored_announcements')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Target audience
+    target_audience = models.CharField(max_length=20, choices=User.USER_TYPE_CHOICES, blank=True, null=True)
+    specific_recipients = models.ManyToManyField(User, blank=True, related_name='targeted_announcements')
+    
+    # Read receipts
+    read_by = models.ManyToManyField(User, blank=True, related_name='read_announcements')
+    
+    class Meta:
+        ordering = ['-publish_date', '-created_at']
+        verbose_name = 'Announcement'
+        verbose_name_plural = 'Announcements'
+    
+    def __str__(self):
+        return self.title
+    
+    @property
+    def is_active(self):
+        now = timezone.now()
+        if self.publish_date and self.publish_date > now:
+            return False
+        if self.expiration_date and self.expiration_date < now:
+            return False
+        return self.is_published
+    
+    @property
+    def read_count(self):
+        return self.read_by.count()
+    
+    @property
+    def unread_count(self):
+        # This would need to be calculated based on the target audience
+        return 0  # Placeholder
+
+
+class Message(models.Model):
+    """
+    Model for user-to-user messages
+    """
+    STATUS_CHOICES = (
+        ('sent', 'Sent'),
+        ('delivered', 'Delivered'),
+        ('read', 'Read'),
+        ('archived', 'Archived'),
+    )
+    
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    recipients = models.ManyToManyField(User, related_name='received_messages')
+    subject = models.CharField(max_length=200)
+    body = models.TextField()
+    parent_message = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='replies')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='sent')
+    is_important = models.BooleanField(default=False)
+    sent_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    
+    # Attachments
+    attachments = models.ManyToManyField('MessageAttachment', blank=True)
+    
+    class Meta:
+        ordering = ['-sent_at']
+        verbose_name = 'Message'
+        verbose_name_plural = 'Messages'
+    
+    def __str__(self):
+        return f"{self.subject} - {self.sender.username}"
+    
+    @property
+    def is_read(self):
+        return self.status == 'read' and self.read_at is not None
+    
+    def mark_as_read(self, user):
+        if user in self.recipients.all() and not self.is_read:
+            self.status = 'read'
+            self.read_at = timezone.now()
+            self.save()
+            return True
+        return False
+
+
+class MessageAttachment(models.Model):
+    """
+    Model for message attachments
+    """
+    file = models.FileField(upload_to='message_attachments/%Y/%m/%d/')
+    original_filename = models.CharField(max_length=255)
+    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    file_size = models.BigIntegerField()  # Size in bytes
+    
+    class Meta:
+        ordering = ['-uploaded_at']
+        verbose_name = 'Message Attachment'
+        verbose_name_plural = 'Message Attachments'
+    
+    def __str__(self):
+        return self.original_filename
+    
+    def save(self, *args, **kwargs):
+        if not self.original_filename and self.file:
+            self.original_filename = self.file.name
+        if not self.file_size and self.file:
+            self.file_size = self.file.size
+        super().save(*args, **kwargs)
+    
+    @property
+    def file_size_display(self):
+        """Return human-readable file size"""
+        if self.file_size < 1024:
+            return f"{self.file_size} B"
+        elif self.file_size < 1024 * 1024:
+            return f"{self.file_size / 1024:.1f} KB"
+        elif self.file_size < 1024 * 1024 * 1024:
+            return f"{self.file_size / (1024 * 1024):.1f} MB"
+        else:
+            return f"{self.file_size / (1024 * 1024 * 1024):.1f} GB"
+
+
+class DiscussionThread(models.Model):
+    """
+    Model for discussion threads (forum-like functionality)
+    """
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='authored_threads')
+    category = models.ForeignKey(CommunicationCategory, on_delete=models.PROTECT, related_name='discussion_threads')
+    is_pinned = models.BooleanField(default=False)
+    is_locked = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    views = models.PositiveIntegerField(default=0)
+    
+    class Meta:
+        ordering = ['-is_pinned', '-updated_at']
+        verbose_name = 'Discussion Thread'
+        verbose_name_plural = 'Discussion Threads'
+    
+    def __str__(self):
+        return self.title
+    
+    @property
+    def reply_count(self):
+        return self.replies.count()
+    
+    @property
+    def last_reply(self):
+        return self.replies.order_by('-created_at').first()
+
+
+class DiscussionReply(models.Model):
+    """
+    Model for replies to discussion threads
+    """
+    thread = models.ForeignKey(DiscussionThread, on_delete=models.CASCADE, related_name='replies')
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='forum_replies')
+    content = models.TextField()
+    is_approved = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # For reply-to-reply functionality
+    parent_reply = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='child_replies')
+    
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = 'Discussion Reply'
+        verbose_name_plural = 'Discussion Replies'
+    
+    def __str__(self):
+        return f"Reply to: {self.thread.title}"
+
+
+class UserNotificationPreference(models.Model):
+    """
+    Model for user notification preferences
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='notification_preferences')
+    
+    # Email notifications
+    email_announcements = models.BooleanField(default=True)
+    email_messages = models.BooleanField(default=True)
+    email_thread_replies = models.BooleanField(default=True)
+    email_mentions = models.BooleanField(default=True)
+    
+    # Push notifications
+    push_announcements = models.BooleanField(default=True)
+    push_messages = models.BooleanField(default=True)
+    push_thread_replies = models.BooleanField(default=True)
+    
+    # In-app notifications
+    in_app_announcements = models.BooleanField(default=True)
+    in_app_messages = models.BooleanField(default=True)
+    in_app_thread_replies = models.BooleanField(default=True)
+    
+    # Frequency
+    email_digest_frequency = models.CharField(max_length=20, choices=(
+        ('immediate', 'Immediate'),
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+    ), default='immediate')
+    
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'User Notification Preference'
+        verbose_name_plural = 'User Notification Preferences'
+    
+    def __str__(self):
+        return f"Notification preferences for {self.user.username}"

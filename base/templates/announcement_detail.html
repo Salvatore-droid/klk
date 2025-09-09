@@ -1,0 +1,230 @@
+{% extends 'index.html' %}
+{% load static %}
+
+{% block content %}
+
+<style>
+    .announcement-detail {
+        padding: 2rem;
+        animation: fadeIn 0.8s ease;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .detail-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--gray-light);
+    }
+
+    .detail-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 1rem;
+    }
+
+    .announcement-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+        color: var(--gray);
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .meta-item i {
+        font-size: 0.8rem;
+    }
+
+    .priority-badge {
+        padding: 0.3rem 0.8rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .priority-high {
+        background-color: rgba(247, 37, 133, 0.1);
+        color: var(--danger);
+    }
+
+    .priority-medium {
+        background-color: rgba(248, 150, 30, 0.1);
+        color: var(--warning);
+    }
+
+    .priority-low {
+        background-color: rgba(76, 201, 240, 0.1);
+        color: var(--success);
+    }
+
+    .announcement-content {
+        background-color: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 2rem;
+        box-shadow: var(--shadow);
+        margin-bottom: 2rem;
+    }
+
+    .content-body {
+        line-height: 1.8;
+        color: var(--dark);
+    }
+
+    .content-body h2, .content-body h3, .content-body h4 {
+        margin: 1.5rem 0 1rem 0;
+        color: var(--dark);
+    }
+
+    .content-body p {
+        margin-bottom: 1rem;
+    }
+
+    .content-body ul, .content-body ol {
+        margin-bottom: 1rem;
+        padding-left: 1.5rem;
+    }
+
+    .content-body li {
+        margin-bottom: 0.5rem;
+    }
+
+    .content-body blockquote {
+        border-left: 4px solid var(--primary);
+        padding-left: 1rem;
+        margin: 1.5rem 0;
+        font-style: italic;
+        color: var(--gray);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        border: none;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background-color: var(--primary);
+        color: var(--white);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background-color: var(--gray-light);
+        color: var(--dark);
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--gray);
+        color: var(--white);
+    }
+
+    .audience-info {
+        background-color: var(--lighter);
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        margin: 1.5rem 0;
+    }
+
+    .audience-info h4 {
+        margin-bottom: 0.5rem;
+        color: var(--dark);
+    }
+
+    .audience-info p {
+        margin-bottom: 0;
+        color: var(--gray);
+    }
+
+    @media (max-width: 768px) {
+        .announcement-meta {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="announcement-detail">
+    <div class="detail-header">
+        <h1>{{ announcement.title }}</h1>
+        
+        <div class="announcement-meta">
+            <div class="meta-item">
+                <i class="fas fa-user"></i>
+                <span>By {{ announcement.author.get_full_name|default:announcement.author.username }}</span>
+            </div>
+            <div class="meta-item">
+                <i class="fas fa-clock"></i>
+                <span>Published {{ announcement.publish_date|date:"M d, Y" }}</span>
+            </div>
+            <div class="meta-item">
+                <i class="fas fa-tag"></i>
+                <span>{{ announcement.category.name }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="priority-badge priority-{{ announcement.priority }}">{{ announcement.get_priority_display }}</span>
+            </div>
+        </div>
+        
+        {% if announcement.expiration_date %}
+        <div class="meta-item">
+            <i class="fas fa-calendar-times"></i>
+            <span>Expires {{ announcement.expiration_date|date:"M d, Y" }}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="announcement-content">
+        {% if announcement.target_audience %}
+        <div class="audience-info">
+            <h4><i class="fas fa-users"></i> Target Audience</h4>
+            <p>This announcement is intended for {{ announcement.get_target_audience_display }} users.</p>
+        </div>
+        {% endif %}
+        
+        <div class="content-body">
+            {{ announcement.content|safe }}
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <a href="{% url 'announcement_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Announcements
+        </a>
+        {% if request.user.is_staff %}
+        <a href="/admin/communication/announcement/{{ announcement.id }}/change/" class="btn btn-primary" target="_blank">
+            <i class="fas fa-edit"></i> Edit Announcement
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

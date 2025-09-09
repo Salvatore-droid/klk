@@ -32,4 +32,25 @@ urlpatterns = [
     path('performance/edit/<int:pk>/', views.edit_performance, name='edit_performance'),
     path('performance/delete/<int:pk>/', views.delete_performance, name='delete_performance'),
     path('performance/note/<int:pk>/', views.add_performance_note, name='add_performance_note'),
+
+
+    path('calendar/', views.academic_calendar, name='academic_calendar'),
+    path('calendar/events/', views.calendar_events_api, name='calendar_events_api'),
+    path('calendar/event/add/', views.add_event, name='add_event'),
+    path('calendar/event/<int:event_id>/', views.event_detail, name='event_detail'),
+    path('calendar/event/<int:event_id>/edit/', views.edit_event, name='edit_event'),
+    path('calendar/event/<int:event_id>/delete/', views.delete_event, name='delete_event'),
+    path('calendar/event/<int:event_id>/join/', views.join_event, name='join_event'),
+    path('calendar/event/<int:event_id>/leave/', views.leave_event, name='leave_event'),
+
+    path('communication/', views.communication_dashboard, name='communication'),
+    path('communication/announcements/', views.announcement_list, name='announcement_list'),
+    path('communication/announcements/<int:announcement_id>/', views.announcement_detail, name='announcement_detail'),
+    path('communication/messages/', views.message_inbox, name='message_inbox'),
+    path('communication/messages/<int:message_id>/', views.message_detail, name='message_detail'),
+    path('communication/messages/send/', views.send_message, name='send_message'),
+    path('communication/discussions/', views.discussion_list, name='discussion_list'),
+    path('communication/discussions/<int:thread_id>/', views.discussion_detail, name='discussion_detail'),
+    path('communication/discussions/create/', views.create_discussion, name='create_discussion'),
+    path('communication/notifications/preferences/', views.notification_preferences, name='notification_preferences'),
 ]

@@ -1,0 +1,229 @@
+{% extends 'index.html' %}
+{% load static %}
+
+{% block content %}
+
+<style>
+    .form-container {
+        background-color: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 2rem;
+        box-shadow: var(--shadow);
+        margin: 2rem auto;
+        max-width: 800px;
+    }
+    
+    .form-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--gray-light);
+    }
+    
+    .form-header h1 {
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: var(--dark);
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--dark);
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--gray-light);
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+    
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.2);
+    }
+    
+    .form-text {
+        font-size: 0.875rem;
+        color: var(--gray);
+        margin-top: 0.25rem;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    
+    .form-check {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .form-check-input {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        border: none;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary);
+        color: var(--white);
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+        background-color: var(--gray-light);
+        color: var(--dark);
+    }
+    
+    .btn-secondary:hover {
+        background-color: var(--gray);
+        color: var(--white);
+    }
+    
+    .error-message {
+        color: var(--danger);
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    
+    @media (max-width: 768px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-container {
+            padding: 1.5rem;
+            margin: 1rem;
+        }
+    }
+</style>
+
+<div class="form-container">
+    <div class="form-header">
+        <h1>Add New Event</h1>
+    </div>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="title">Event Title *</label>
+            <input type="text" class="form-control" id="title" name="title" value="{{ form_data.title }}" required>
+            {% if errors.title %}
+                <div class="error-message">{{ errors.title }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="4">{{ form_data.description }}</textarea>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="event_type">Event Type *</label>
+                <select class="form-control" id="event_type" name="event_type" required>
+                    <option value="">Select event type</option>
+                    {% for type in event_types %}
+                        <option value="{{ type.id }}" {% if form_data.event_type == type.id|stringformat:'s' %}selected{% endif %}>{{ type.name }}</option>
+                    {% endfor %}
+                </select>
+                {% if errors.event_type %}
+                    <div class="error-message">{{ errors.event_type }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="priority">Priority</label>
+                <select class="form-control" id="priority" name="priority">
+                    {% for value, label in priorities %}
+                        <option value="{{ value }}" {% if form_data.priority == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="start_date">Start Date & Time *</label>
+                <input type="datetime-local" class="form-control" id="start_date" name="start_date" value="{% if form_data.start_date %}{{ form_data.start_date }}{% else %}{{ default_start }}{% endif %}" required>
+                {% if errors.start_date %}
+                    <div class="error-message">{{ errors.start_date }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="end_date">End Date & Time *</label>
+                <input type="datetime-local" class="form-control" id="end_date" name="end_date" value="{% if form_data.end_date %}{{ form_data.end_date }}{% else %}{{ default_end }}{% endif %}" required>
+                {% if errors.end_date %}
+                    <div class="error-message">{{ errors.end_date }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="all_day" name="all_day" {% if form_data.all_day %}checked{% endif %}>
+                <label for="all_day">All day event</label>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="location">Location</label>
+            <input type="text" class="form-control" id="location" name="location" value="{{ form_data.location }}">
+        </div>
+        
+        <div class="form-group" style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn btn-primary">Save Event</button>
+            <a href="{% url 'academic_calendar' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up date/time inputs
+    const allDayCheckbox = document.getElementById('all_day');
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+    
+    // Toggle time inputs based on all-day checkbox
+    function toggleTimeInputs() {
+        if (allDayCheckbox.checked) {
+            startDateInput.type = 'date';
+            endDateInput.type = 'date';
+        } else {
+            startDateInput.type = 'datetime-local';
+            endDateInput.type = 'datetime-local';
+        }
+    }
+    
+    allDayCheckbox.addEventListener('change', toggleTimeInputs);
+    toggleTimeInputs(); // Initial call
+});
+</script>
+
+{% endblock %}

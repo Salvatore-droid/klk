@@ -1,0 +1,457 @@
+{% extends 'index.html' %}
+{% load static %}
+
+{% block content %}
+
+<style>
+    .notification-preferences {
+        padding: 2rem;
+        animation: fadeIn 0.8s ease;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .preferences-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--gray-light);
+    }
+
+    .preferences-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark);
+        position: relative;
+        padding-bottom: 0.5rem;
+    }
+
+    .preferences-header h1::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: -1.5rem;
+        width: 60px;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary), var(--accent));
+        border-radius: 2px;
+    }
+
+    .preferences-form {
+        background-color: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 2rem;
+        box-shadow: var(--shadow);
+    }
+
+    .preference-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--gray-light);
+    }
+
+    .preference-section:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+
+    .section-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .section-header h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--dark);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .preference-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .preference-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background-color: var(--lighter);
+        border-radius: var(--border-radius);
+        transition: var(--transition);
+    }
+
+    .preference-item:hover {
+        background-color: var(--primary-light);
+    }
+
+    .preference-info {
+        flex: 1;
+    }
+
+    .preference-label {
+        font-weight: 500;
+        color: var(--dark);
+        margin-bottom: 0.25rem;
+    }
+
+    .preference-description {
+        font-size: 0.85rem;
+        color: var(--gray);
+    }
+
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--gray-light);
+        transition: var(--transition);
+        border-radius: 34px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: var(--white);
+        transition: var(--transition);
+        border-radius: 50%;
+    }
+
+    input:checked + .slider {
+        background-color: var(--primary);
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+
+    .frequency-select {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--gray-light);
+        border-radius: var(--border-radius);
+        background-color: var(--white);
+        font-size: 0.9rem;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--gray-light);
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        border: none;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background-color: var(--primary);
+        color: var(--white);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background-color: var(--gray-light);
+        color: var(--dark);
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--gray);
+        color: var(--white);
+    }
+
+    .save-status {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--gray);
+    }
+
+    .save-status.saved {
+        color: var(--success);
+    }
+
+    @media (max-width: 768px) {
+        .preference-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+        
+        .save-status {
+            margin-left: 0;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="notification-preferences">
+    <div class="preferences-header">
+        <h1>Notification Preferences</h1>
+        <p>Customize how and when you receive notifications</p>
+    </div>
+
+    <form method="post" class="preferences-form" id="preferences-form">
+        {% csrf_token %}
+        
+        <!-- Email Notifications Section -->
+        <div class="preference-section">
+            <div class="section-header">
+                <h2><i class="fas fa-envelope"></i> Email Notifications</h2>
+                <p>Receive notifications via email</p>
+            </div>
+            
+            <div class="preference-grid">
+                <div class="preference-item">
+                    <div class="preference-info">
+                        <div class="preference-label">Announcements</div>
+                        <div class="preference-description">Important system announcements and updates</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="email_announcements" {% if preferences.email_announcements %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="preference-item">
+                    <div class="preference-info">
+                        <div class="preference-label">Messages</div>
+                        <div class="preference-description">When you receive new private messages</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="email_messages" {% if preferences.email_messages %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="preference-item">
+                    <div class="preference-info">
+                        <div class="preference-label">Discussion Replies</div>
+                        <div class="preference-description">When someone replies to your discussions</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="email_thread_replies" {% if preferences.email_thread_replies %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="preference-item">
+                    <div class="preference-info">
+                        <div class="preference-label">Mentions</div>
+                        <div class="preference-description">When someone mentions you in discussions</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="email_mentions" {% if preferences.email_mentions %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Push Notifications Section -->
+        <div class="preference-section">
+            <div class="section-header">
+                <h2><i class="fas fa-bell"></i> Push Notifications</h2>
+                <p>Receive browser or mobile push notifications</p>
+            </div>
+            
+            <div class="preference-grid">
+                <div class="preference-item">
+                    <div class="preference-info">
+                        <div class="preference-label">Announcements</div>
+                        <div class="preference-description">Important system announcements and updates</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="push_announcements" {% if preferences.push_announcements %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="preference-item">
+                    <div class="preference-info">
+                        <div class="preference-label">Messages</div>
+                        <div class="preference-description">When you receive new private messages</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="push_messages" {% if preferences.push_messages %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="preference-item">
+                    <div class="preference-info">
+                        <div class="preference-label">Discussion Replies</div>
+                        <div class="preference-description">When someone replies to your discussions</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="push_thread_replies" {% if preferences.push_thread_replies %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- In-App Notifications Section -->
+        <div class="preference-section">
+            <div class="section-header">
+                <h2><i class="fas fa-inbox"></i> In-App Notifications</h2>
+                <p>Notifications within the application</p>
+            </div>
+            
+            <div class="preference-grid">
+                <div class="preference-item">
+                    <div class="preference-info">
+                        <div class="preference-label">Announcements</div>
+                        <div class="preference-description">Important system announcements and updates</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="in_app_announcements" {% if preferences.in_app_announcements %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="preference-item">
+                    <div class="preference-info">
+                        <div class="preference-label">Messages</div>
+                        <div class="preference-description">When you receive new private messages</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="in_app_messages" {% if preferences.in_app_messages %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="preference-item">
+                    <div class="preference-info">
+                        <div class="preference-label">Discussion Replies</div>
+                        <div class="preference-description">When someone replies to your discussions</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="in_app_thread_replies" {% if preferences.in_app_thread_replies %}checked{% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Email Frequency Section -->
+        <div class="preference-section">
+            <div class="section-header">
+                <h2><i class="fas fa-clock"></i> Email Frequency</h2>
+                <p>How often you receive email notifications</p>
+            </div>
+            
+            <div class="preference-item">
+                <div class="preference-info">
+                    <div class="preference-label">Email Digest Frequency</div>
+                    <div class="preference-description">How often to receive bundled notifications</div>
+                </div>
+                <select name="email_digest_frequency" class="frequency-select">
+                    <option value="immediate" {% if preferences.email_digest_frequency == 'immediate' %}selected{% endif %}>Immediate</option>
+                    <option value="daily" {% if preferences.email_digest_frequency == 'daily' %}selected{% endif %}>Daily Digest</option>
+                    <option value="weekly" {% if preferences.email_digest_frequency == 'weekly' %}selected{% endif %}>Weekly Digest</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Save Preferences
+            </button>
+            <a href="{% url 'communication_dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+            <div class="save-status" id="save-status">
+                <i class="fas fa-info-circle"></i>
+                <span>Changes are saved automatically</span>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('preferences-form');
+    const saveStatus = document.getElementById('save-status');
+    
+    // Auto-save when toggles are changed
+    const toggleSwitches = form.querySelectorAll('input[type="checkbox"], select');
+    toggleSwitches.forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            saveStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            
+            // Submit the form via AJAX
+            const formData = new FormData(form);
+            
+            fetch('{% url 'notification_preferences' %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    saveStatus.innerHTML = '<i class="fas fa-check-circle"></i> Preferences saved';
+                    saveStatus.classList.add('saved');
+                    
+                    // Remove saved status after 3 seconds
+                    setTimeout(() => {
+                        saveStatus.innerHTML = '<i class="fas fa-info-circle"></i> Changes are saved automatically';
+                        saveStatus.classList.remove('saved');
+                    }, 3000);
+                } else {
+                    saveStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error saving preferences';
+                }
+            })
+            .catch(error => {
+                saveStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error saving preferences';
+            });
+        });
+    });
+});
+</script>
+
+{% endblock %}

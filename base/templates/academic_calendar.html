@@ -1,0 +1,756 @@
+{% extends 'index.html' %}
+{% load static %}
+
+{% block content %}
+
+<style>
+    /* Academic Calendar Styles */
+    .academic-calendar {
+        padding: 2rem;
+        animation: fadeIn 0.8s ease;
+    }
+
+    .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--gray-light);
+    }
+
+    .calendar-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark);
+        position: relative;
+        padding-bottom: 0.5rem;
+    }
+
+    .calendar-header h1::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: -1.5rem;
+        width: 60px;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary), var(--accent));
+        border-radius: 2px;
+    }
+
+    .calendar-controls {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .month-navigation {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .nav-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--white);
+        color: var(--dark);
+        border: 1px solid var(--gray-light);
+        cursor: pointer;
+        transition: var(--transition);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .nav-btn:hover {
+        background-color: var(--primary);
+        color: var(--white);
+        border-color: var(--primary);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow);
+    }
+
+    .current-month {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--dark);
+        min-width: 180px;
+        text-align: center;
+    }
+
+    .view-toggle {
+        display: flex;
+        background-color: var(--lighter);
+        border-radius: 50px;
+        padding: 0.25rem;
+    }
+
+    .view-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        border: none;
+        background-color: transparent;
+        color: var(--gray);
+    }
+
+    .view-btn.active {
+        background-color: var(--white);
+        color: var(--primary);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .calendar-content {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 2rem;
+    }
+
+    .calendar-main {
+        background-color: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+    }
+
+    .calendar-main:hover {
+        box-shadow: var(--shadow-lg);
+    }
+
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .calendar-day-header {
+        text-align: center;
+        font-weight: 600;
+        color: var(--gray);
+        padding: 0.75rem 0;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .calendar-day {
+        height: 100px;
+        background-color: var(--lighter);
+        border-radius: var(--border-radius);
+        padding: 0.5rem;
+        position: relative;
+        transition: var(--transition);
+        border: 1px solid transparent;
+    }
+
+    .calendar-day:hover {
+        background-color: var(--primary-light);
+        border-color: var(--primary-light);
+        transform: translateY(-2px);
+    }
+
+    .day-number {
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .day-events {
+        overflow-y: auto;
+        max-height: 70px;
+    }
+
+    .day-event {
+        font-size: 0.75rem;
+        padding: 0.1rem 0.3rem;
+        border-radius: 3px;
+        margin-bottom: 0.2rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: pointer;
+    }
+
+    .day-event.academic {
+        background-color: rgba(67, 97, 238, 0.1);
+        color: var(--primary);
+        border-left: 2px solid var(--primary);
+    }
+
+    .day-event.holiday {
+        background-color: rgba(247, 37, 133, 0.1);
+        color: var(--danger);
+        border-left: 2px solid var(--danger);
+    }
+
+    .day-event.exam {
+        background-color: rgba(248, 150, 30, 0.1);
+        color: var(--warning);
+        border-left: 2px solid var(--warning);
+    }
+
+    .day-event.other {
+        background-color: rgba(76, 201, 240, 0.1);
+        color: var(--success);
+        border-left: 2px solid var(--success);
+    }
+
+    .current-day {
+        background-color: var(--primary-light);
+        border: 2px solid var(--primary);
+    }
+
+    .current-day .day-number {
+        color: var(--primary);
+        font-weight: 700;
+    }
+
+    .other-month {
+        opacity: 0.4;
+    }
+
+    .calendar-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .upcoming-events {
+        background-color: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+    }
+
+    .upcoming-events:hover {
+        box-shadow: var(--shadow-lg);
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-header h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--dark);
+        position: relative;
+        padding-left: 1rem;
+    }
+
+    .section-header h3::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 4px;
+        height: 20px;
+        background: linear-gradient(to bottom, var(--primary), var(--accent));
+        border-radius: 2px;
+    }
+
+    .event-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-btn {
+        padding: 0.4rem 0.8rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        border: 1px solid var(--gray-light);
+        background-color: var(--white);
+        color: var(--gray);
+    }
+
+    .filter-btn.active, .filter-btn:hover {
+        background-color: var(--primary);
+        color: var(--white);
+        border-color: var(--primary);
+    }
+
+    .event-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .event-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-radius: var(--border-radius);
+        background-color: var(--lighter);
+        transition: var(--transition);
+        cursor: pointer;
+    }
+
+    .event-item:hover {
+        background-color: var(--primary-light);
+        transform: translateX(5px);
+    }
+
+    .event-date {
+        width: 50px;
+        height: 50px;
+        border-radius: var(--border-radius);
+        background-color: var(--white);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .event-day {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--primary);
+        line-height: 1;
+    }
+
+    .event-month {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--gray);
+        text-transform: uppercase;
+        margin-top: 2px;
+    }
+
+    .event-details {
+        flex: 1;
+    }
+
+    .event-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--dark);
+        margin-bottom: 3px;
+    }
+
+    .event-time {
+        font-size: 0.85rem;
+        color: var(--gray);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .event-time i {
+        font-size: 0.8rem;
+    }
+
+    .event-type {
+        display: inline-block;
+        padding: 0.2rem 0.5rem;
+        border-radius: 50px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        margin-top: 0.3rem;
+    }
+
+    .event-type.academic {
+        background-color: rgba(67, 97, 238, 0.1);
+        color: var(--primary);
+    }
+
+    .event-type.holiday {
+        background-color: rgba(247, 37, 133, 0.1);
+        color: var(--danger);
+    }
+
+    .event-type.exam {
+        background-color: rgba(248, 150, 30, 0.1);
+        color: var(--warning);
+    }
+
+    .event-type.other {
+        background-color: rgba(76, 201, 240, 0.1);
+        color: var(--success);
+    }
+
+    .add-event-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        color: var(--white);
+        border: none;
+        border-radius: var(--border-radius);
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        margin-top: 1rem;
+        box-shadow: var(--shadow);
+    }
+
+    .add-event-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .add-event-btn i {
+        margin-right: 0.5rem;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        opacity: 0;
+        visibility: hidden;
+        transition: var(--transition);
+    }
+
+    .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .modal {
+        background-color: var(--white);
+        border-radius: var(--border-radius-lg);
+        width: 90%;
+        max-width: 600px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-50px);
+        transition: var(--transition);
+    }
+
+    .modal-overlay.active .modal {
+        transform: translateY(0);
+    }
+
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--gray-light);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h3 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--dark);
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--gray);
+        transition: var(--transition);
+    }
+
+    .modal-close:hover {
+        color: var(--danger);
+        transform: rotate(90deg);
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--dark);
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--gray-light);
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.2);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--gray-light);
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        border: none;
+    }
+
+    .btn-primary {
+        background-color: var(--primary);
+        color: var(--white);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background-color: var(--gray-light);
+        color: var(--dark);
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--gray);
+        color: var(--white);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 992px) {
+        .calendar-content {
+            grid-template-columns: 1fr;
+        }
+        
+        .calendar-grid {
+            grid-template-columns: repeat(7, 1fr);
+        }
+        
+        .calendar-day {
+            height: 80px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .calendar-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .calendar-controls {
+            width: 100%;
+            justify-content: space-between;
+        }
+        
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .calendar-day {
+            height: 70px;
+            padding: 0.25rem;
+        }
+        
+        .day-event {
+            font-size: 0.7rem;
+            padding: 0.05rem 0.2rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .academic-calendar {
+            padding: 1rem;
+        }
+        
+        .calendar-day-header {
+            font-size: 0.8rem;
+            padding: 0.5rem 0;
+        }
+        
+        .day-number {
+            font-size: 0.8rem;
+        }
+        
+        .event-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .event-date {
+            margin-right: 0;
+            margin-bottom: 0.5rem;
+        }
+    }
+</style>
+
+<div class="academic-calendar">
+    <div class="calendar-header">
+        <div>
+            <h1>Academic Calendar</h1>
+            <p>View and manage academic events, holidays, and important dates</p>
+        </div>
+        <div class="calendar-controls">
+            <div class="month-navigation">
+                <a href="?year={{ prev_year }}&month={{ prev_month }}&event_type={{ selected_event_type|default:'all' }}&view={{ view_type }}" class="nav-btn prev-month">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                <div class="current-month">{{ month_name }} {{ current_year }}</div>
+                <a href="?year={{ next_year }}&month={{ next_month }}&event_type={{ selected_event_type|default:'all' }}&view={{ view_type }}" class="nav-btn next-month">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </div>
+            <div class="view-toggle">
+                <a href="?year={{ current_year }}&month={{ current_month }}&event_type={{ selected_event_type|default:'all' }}&view=month" class="view-btn {% if view_type == 'month' %}active{% endif %}">Month</a>
+                <a href="?year={{ current_year }}&month={{ current_month }}&event_type={{ selected_event_type|default:'all' }}&view=week" class="view-btn {% if view_type == 'week' %}active{% endif %}">Week</a>
+                <a href="?year={{ current_year }}&month={{ current_month }}&event_type={{ selected_event_type|default:'all' }}&view=list" class="view-btn {% if view_type == 'list' %}active{% endif %}">List</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="calendar-content">
+        <div class="calendar-main">
+            <div class="calendar-grid">
+                <div class="calendar-day-header">Sun</div>
+                <div class="calendar-day-header">Mon</div>
+                <div class="calendar-day-header">Tue</div>
+                <div class="calendar-day-header">Wed</div>
+                <div class="calendar-day-header">Thu</div>
+                <div class="calendar-day-header">Fri</div>
+                <div class="calendar-day-header">Sat</div>
+
+                {% for week in calendar_data %}
+                    {% for day in week %}
+                        <div class="calendar-day {% if day.day == 0 %}other-month{% endif %} {% if day.day == today.day and current_month == today.month and current_year == today.year %}current-day{% endif %}">
+                            {% if day.day != 0 %}
+                                <div class="day-number">{{ day.day }}</div>
+                                <div class="day-events">
+                                    {% for event in day.events %}
+                                        <div class="day-event {{ event.event_type.name|lower }}" title="{{ event.title }}">
+                                            {{ event.title }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="calendar-sidebar">
+            <div class="upcoming-events">
+                <div class="section-header">
+                    <h3>Upcoming Events</h3>
+                </div>
+                
+                <div class="event-filters">
+                    <a href="?year={{ current_year }}&month={{ current_month }}&event_type=all&view={{ view_type }}" class="filter-btn {% if selected_event_type == 'all' or not selected_event_type or selected_event_type == 'None' %}active{% endif %}" data-filter="all">All</a>
+                    {% for type in event_types %}
+                        <a href="?year={{ current_year }}&month={{ current_month }}&event_type={{ type.id }}&view={{ view_type }}" class="filter-btn {% if selected_event_type == type.id|stringformat:'s' %}active{% endif %}" data-filter="{{ type.name|lower }}">{{ type.name }}</a>
+                    {% endfor %}
+                </div>
+                
+                <div class="event-list">
+                    {% for event in upcoming_events %}
+                    <div class="event-item" data-type="{{ event.event_type.name|lower }}">
+                        <div class="event-date">
+                            <div class="event-day">{{ event.start_date|date:"d" }}</div>
+                            <div class="event-month">{{ event.start_date|date:"M"|upper }}</div>
+                        </div>
+                        <div class="event-details">
+                            <div class="event-title">{{ event.title }}</div>
+                            <div class="event-time">
+                                <i class="far fa-clock"></i> 
+                                {% if event.all_day %}
+                                    All day
+                                {% else %}
+                                    {{ event.start_date|time }} - {{ event.end_date|time }}
+                                {% endif %}
+                            </div>
+                            <span class="event-type {{ event.event_type.name|lower }}">{{ event.event_type.name }}</span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="event-item">
+                        <div class="event-details">
+                            <div class="event-title">No upcoming events</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <a href="{% url 'add_event' %}" class="add-event-btn">
+                    <i class="fas fa-plus"></i> Add New Event
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Event filtering
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const filter = button.getAttribute('data-filter');
+            
+            // Update active button
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            // Filter events
+            const eventItems = document.querySelectorAll('.event-item');
+            eventItems.forEach(item => {
+                if (filter === 'all' || item.getAttribute('data-type') === filter) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    });
+});
+</script>
+
+{% endblock %}

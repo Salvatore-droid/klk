@@ -1190,3 +1190,920 @@ def add_performance_note(request, pk):
         'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
     }
     return render(request, 'add_performance_note.html', context)
+
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import JsonResponse
+from django.db.models import Q
+from django.core.paginator import Paginator
+from django.utils import timezone
+from datetime import datetime, timedelta
+import calendar
+from .models import AcademicEvent, EventType, EventParticipant, EventAttachment
+
+@login_required
+def academic_calendar(request):
+    """
+    Main academic calendar view
+    """
+    # Get filter parameters
+    event_type = request.GET.get('event_type')
+    month = request.GET.get('month', timezone.now().month)
+    year = request.GET.get('year', timezone.now().year)
+    view_type = request.GET.get('view', 'month')  # month, week, list
+    
+    try:
+        month = int(month)
+        year = int(year)
+    except (ValueError, TypeError):
+        month = timezone.now().month
+        year = timezone.now().year
+    
+    # Calculate previous and next month/year for navigation
+    prev_month = month - 1
+    prev_year = year
+    if prev_month < 1:
+        prev_month = 12
+        prev_year = year - 1
+        
+    next_month = month + 1
+    next_year = year
+    if next_month > 12:
+        next_month = 1
+        next_year = year + 1
+    
+    # Get events for the selected month/year
+    start_date = datetime(year, month, 1)
+    end_date = datetime(year, month, calendar.monthrange(year, month)[1])
+    
+    events = AcademicEvent.objects.filter(
+        is_active=True,
+        start_date__gte=start_date,
+        start_date__lte=end_date
+    )
+    
+    # Fix: Check if event_type is valid before filtering
+    if event_type and event_type != 'all' and event_type != 'None':
+        try:
+            events = events.filter(event_type__id=int(event_type))
+        except (ValueError, TypeError):
+            # If event_type is not a valid integer, ignore the filter
+            pass
+    
+    # Get upcoming events for sidebar
+    upcoming_events = AcademicEvent.objects.filter(
+        is_active=True,
+        start_date__gte=timezone.now()
+    ).order_by('start_date')[:10]
+    
+    # Get event types for filter
+    event_types = EventType.objects.filter(is_active=True)
+    
+    # Generate calendar data for template
+    cal = calendar.monthcalendar(year, month)
+    
+    # Prepare events for each day
+    calendar_data = []
+    today = timezone.now().date()
+    
+    for week in cal:
+        week_data = []
+        for day in week:
+            day_events = []
+            if day != 0:  # 0 means day is not in current month
+                day_date = datetime(year, month, day).date()
+                day_events = events.filter(
+                    Q(start_date__date=day_date) | 
+                    Q(end_date__date=day_date) |
+                    Q(start_date__lte=day_date, end_date__gte=day_date)
+                )
+            week_data.append({
+                'day': day,
+                'events': day_events
+            })
+        calendar_data.append(week_data)
+    
+    context = {
+        'calendar_data': calendar_data,
+        'current_month': month,
+        'current_year': year,
+        'month_name': calendar.month_name[month],
+        'prev_month': prev_month,
+        'prev_year': prev_year,
+        'next_month': next_month,
+        'next_year': next_year,
+        'upcoming_events': upcoming_events,
+        'event_types': event_types,
+        'selected_event_type': event_type,
+        'view_type': view_type,
+        'today': today,
+        'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+    }
+    
+    return render(request, 'academic_calendar.html', context)
+
+@login_required
+def calendar_events_api(request):
+    """
+    API endpoint for calendar events (for AJAX requests)
+    """
+    start = request.GET.get('start')
+    end = request.GET.get('end')
+    event_type = request.GET.get('event_type')
+    
+    try:
+        start_date = datetime.strptime(start, '%Y-%m-%d')
+        end_date = datetime.strptime(end, '%Y-%m-%d')
+    except (ValueError, TypeError):
+        start_date = timezone.now() - timedelta(days=30)
+        end_date = timezone.now() + timedelta(days=30)
+    
+    events = AcademicEvent.objects.filter(
+        is_active=True,
+        start_date__gte=start_date,
+        end_date__lte=end_date
+    )
+    
+    if event_type and event_type != 'all':
+        events = events.filter(event_type__id=event_type)
+    
+    events_data = []
+    for event in events:
+        events_data.append({
+            'id': event.id,
+            'title': event.title,
+            'start': event.start_date.isoformat(),
+            'end': event.end_date.isoformat(),
+            'allDay': event.all_day,
+            'color': event.event_type.color,
+            'type': event.event_type.name,
+            'location': event.location or '',
+            'url': f'/calendar/event/{event.id}/'
+        })
+    
+    return JsonResponse(events_data, safe=False)
+
+
+@login_required
+def add_event(request):
+    """
+    View to add a new academic event
+    """
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        event_type_id = request.POST.get('event_type')
+        start_date_str = request.POST.get('start_date')
+        end_date_str = request.POST.get('end_date')
+        all_day = request.POST.get('all_day') == 'on'
+        location = request.POST.get('location')
+        priority = request.POST.get('priority')
+        
+        # Validate required fields
+        errors = {}
+        if not title:
+            errors['title'] = 'Title is required'
+        if not event_type_id:
+            errors['event_type'] = 'Event type is required'
+        if not start_date_str:
+            errors['start_date'] = 'Start date is required'
+        if not end_date_str:
+            errors['end_date'] = 'End date is required'
+        
+        if errors:
+            event_types = EventType.objects.filter(is_active=True)
+            context = {
+                'event_types': event_types,
+                'priorities': AcademicEvent.PRIORITY_CHOICES,
+                'errors': errors,
+                'form_data': request.POST,
+                'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+            }
+            return render(request, 'add_event.html', context)
+        
+        try:
+            event_type = EventType.objects.get(id=event_type_id)
+            
+            # Convert string dates to datetime objects
+            if 'T' in start_date_str:
+                start_datetime = datetime.strptime(start_date_str, '%Y-%m-%dT%H:%M')
+            else:
+                start_datetime = datetime.strptime(start_date_str, '%Y-%m-%d %H:%M:%S')
+                
+            if 'T' in end_date_str:
+                end_datetime = datetime.strptime(end_date_str, '%Y-%m-%dT%H:%M')
+            else:
+                end_datetime = datetime.strptime(end_date_str, '%Y-%m-%d %H:%M:%S')
+            
+            # Create the event
+            event = AcademicEvent(
+                title=title,
+                description=description,
+                event_type=event_type,
+                start_date=start_datetime,
+                end_date=end_datetime,
+                all_day=all_day,
+                location=location,
+                priority=priority,
+                created_by=request.user
+            )
+            event.save()
+            
+            # Add creator as participant
+            EventParticipant.objects.create(
+                event=event,
+                user=request.user,
+                role='organizer',
+                confirmed=True,
+                confirmed_at=timezone.now()
+            )
+            
+            messages.success(request, 'Event created successfully!')
+            return redirect('academic_calendar')
+            
+        except Exception as e:
+            messages.error(request, f'Error creating event: {str(e)}')
+            return redirect('add_event')
+    
+    else:
+        # GET request - show empty form
+        event_types = EventType.objects.filter(is_active=True)
+        
+        # Set default dates for the form
+        default_start = timezone.now().replace(hour=9, minute=0, second=0, microsecond=0)
+        default_end = default_start + timedelta(hours=2)
+        
+        context = {
+            'event_types': event_types,
+            'priorities': AcademicEvent.PRIORITY_CHOICES,
+            'default_start': default_start.strftime('%Y-%m-%dT%H:%M'),
+            'default_end': default_end.strftime('%Y-%m-%dT%H:%M'),
+            'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+        }
+        return render(request, 'add_event.html', context)
+
+
+@login_required
+def event_detail(request, event_id):
+    """
+    View to show event details
+    """
+    event = get_object_or_404(AcademicEvent, id=event_id, is_active=True)
+    participants = EventParticipant.objects.filter(event=event).select_related('user')
+    attachments = EventAttachment.objects.filter(event=event)
+    
+    # Check if current user is participating
+    user_participation = None
+    if request.user.is_authenticated:
+        try:
+            user_participation = EventParticipant.objects.get(event=event, user=request.user)
+        except EventParticipant.DoesNotExist:
+            pass
+    
+    context = {
+        'event': event,
+        'participants': participants,
+        'attachments': attachments,
+        'user_participation': user_participation,
+        'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+    }
+    
+    return render(request, 'event_detail.html', context)
+
+
+@login_required
+def edit_event(request, event_id):
+    """
+    View to edit an existing event
+    """
+    event = get_object_or_404(AcademicEvent, id=event_id, is_active=True)
+    
+    # Check if user has permission to edit (creator or admin)
+    if event.created_by != request.user and not request.user.is_staff:
+        messages.error(request, 'You do not have permission to edit this event.')
+        return redirect('event_detail', event_id=event.id)
+    
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        event_type_id = request.POST.get('event_type')
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        all_day = request.POST.get('all_day') == 'on'
+        location = request.POST.get('location')
+        priority = request.POST.get('priority')
+        
+        # Validate required fields
+        errors = {}
+        if not title:
+            errors['title'] = 'Title is required'
+        if not event_type_id:
+            errors['event_type'] = 'Event type is required'
+        if not start_date:
+            errors['start_date'] = 'Start date is required'
+        if not end_date:
+            errors['end_date'] = 'End date is required'
+        
+        if errors:
+            event_types = EventType.objects.filter(is_active=True)
+            context = {
+                'event': event,
+                'event_types': event_types,
+                'priorities': AcademicEvent.PRIORITY_CHOICES,
+                'errors': errors,
+                'form_data': request.POST,
+                'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+            }
+            return render(request, 'edit_event.html', context)
+        
+        try:
+            event_type = EventType.objects.get(id=event_type_id)
+            
+            # Convert string dates to datetime objects
+            start_datetime = datetime.strptime(start_date, '%Y-%m-%dT%H:%M')
+            end_datetime = datetime.strptime(end_date, '%Y-%m-%dT%H:%M')
+            
+            # Update the event
+            event.title = title
+            event.description = description
+            event.event_type = event_type
+            event.start_date = start_datetime
+            event.end_date = end_datetime
+            event.all_day = all_day
+            event.location = location
+            event.priority = priority
+            event.save()
+            
+            messages.success(request, 'Event updated successfully!')
+            return redirect('event_detail', event_id=event.id)
+            
+        except Exception as e:
+            messages.error(request, f'Error updating event: {str(e)}')
+            return redirect('edit_event', event_id=event.id)
+    
+    else:
+        # GET request - show form with current data
+        event_types = EventType.objects.filter(is_active=True)
+        
+        # Format dates for datetime-local input
+        start_date_formatted = event.start_date.strftime('%Y-%m-%dT%H:%M')
+        end_date_formatted = event.end_date.strftime('%Y-%m-%dT%H:%M')
+        
+        context = {
+            'event': event,
+            'event_types': event_types,
+            'priorities': AcademicEvent.PRIORITY_CHOICES,
+            'start_date_formatted': start_date_formatted,
+            'end_date_formatted': end_date_formatted,
+            'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+        }
+        return render(request, 'edit_event.html', context)
+
+
+@login_required
+def delete_event(request, event_id):
+    """
+    View to delete an event (soft delete)
+    """
+    event = get_object_or_404(AcademicEvent, id=event_id, is_active=True)
+    
+    # Check if user has permission to delete (creator or admin)
+    if event.created_by != request.user and not request.user.is_staff:
+        messages.error(request, 'You do not have permission to delete this event.')
+        return redirect('event_detail', event_id=event.id)
+    
+    if request.method == 'POST':
+        event.is_active = False
+        event.save()
+        
+        messages.success(request, 'Event deleted successfully!')
+        return redirect('academic_calendar')
+    
+    context = {
+        'event': event,
+        'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+    }
+    return render(request, 'delete_event_confirm.html', context)
+
+
+@login_required
+def join_event(request, event_id):
+    """
+    View for a user to join an event
+    """
+    event = get_object_or_404(AcademicEvent, id=event_id, is_active=True)
+    
+    # Check if user is already participating
+    existing_participation = EventParticipant.objects.filter(event=event, user=request.user).first()
+    
+    if existing_participation:
+        messages.info(request, 'You are already participating in this event.')
+        return redirect('event_detail', event_id=event.id)
+    
+    # Create new participation
+    EventParticipant.objects.create(
+        event=event,
+        user=request.user,
+        role='participant',
+        confirmed=True,
+        confirmed_at=timezone.now()
+    )
+    
+    messages.success(request, 'You have successfully joined the event!')
+    return redirect('event_detail', event_id=event.id)
+
+
+@login_required
+def leave_event(request, event_id):
+    """
+    View for a user to leave an event
+    """
+    event = get_object_or_404(AcademicEvent, id=event_id, is_active=True)
+    
+    # Check if user is participating
+    participation = EventParticipant.objects.filter(event=event, user=request.user).first()
+    
+    if not participation:
+        messages.info(request, 'You are not participating in this event.')
+        return redirect('event_detail', event_id=event.id)
+    
+    # Remove participation (can't leave if you're the organizer)
+    if participation.role == 'organizer':
+        messages.error(request, 'Organizers cannot leave their own events. Please delete the event instead.')
+        return redirect('event_detail', event_id=event.id)
+    
+    participation.delete()
+    
+    messages.success(request, 'You have successfully left the event.')
+    return redirect('event_detail', event_id=event.id)
+
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import JsonResponse
+from django.db.models import Q, Count
+from django.core.paginator import Paginator
+from django.utils import timezone
+from datetime import datetime, timedelta
+from .models import (
+    Announcement, Message, MessageAttachment, DiscussionThread, 
+    DiscussionReply, CommunicationCategory, UserNotificationPreference
+)
+
+
+@login_required
+def communication_dashboard(request):
+    """
+    Main communication dashboard view
+    """
+    # Get recent announcements
+    recent_announcements = Announcement.objects.filter(
+        is_published=True,
+        publish_date__lte=timezone.now()
+    ).exclude(
+        Q(expiration_date__lt=timezone.now()) | 
+        Q(read_by=request.user)
+    ).order_by('-publish_date')[:5]
+    
+    # Get unread messages count
+    unread_messages_count = Message.objects.filter(
+        recipients=request.user,
+        status__in=['sent', 'delivered']
+    ).count()
+    
+    # Get recent discussions
+    recent_discussions = DiscussionThread.objects.annotate(
+        reply_count=Count('replies')
+    ).order_by('-updated_at')[:5]
+    
+    # Get user notification preferences
+    try:
+        notification_preferences = UserNotificationPreference.objects.get(user=request.user)
+    except UserNotificationPreference.DoesNotExist:
+        # Create default preferences if they don't exist
+        notification_preferences = UserNotificationPreference.objects.create(user=request.user)
+    
+    context = {
+        'recent_announcements': recent_announcements,
+        'unread_messages_count': unread_messages_count,
+        'recent_discussions': recent_discussions,
+        'notification_preferences': notification_preferences,
+        'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+    }
+    
+    return render(request, 'communication.html', context)
+
+
+@login_required
+def announcement_list(request):
+    """
+    View to list all announcements
+    """
+    # Get filter parameters
+    category = request.GET.get('category')
+    priority = request.GET.get('priority')
+    status = request.GET.get('status', 'active')  # active, all, unread
+    
+    announcements = Announcement.objects.filter(is_published=True)
+    
+    # Apply filters
+    if category and category != 'all':
+        announcements = announcements.filter(category__id=category)
+    
+    if priority and priority != 'all':
+        announcements = announcements.filter(priority=priority)
+    
+    if status == 'unread':
+        announcements = announcements.exclude(read_by=request.user)
+    elif status == 'all':
+        # Show all published announcements regardless of read status
+        pass
+    else:  # active (default)
+        announcements = announcements.filter(
+            publish_date__lte=timezone.now()
+        ).exclude(expiration_date__lt=timezone.now())
+    
+    # Get categories for filter
+    categories = CommunicationCategory.objects.filter(is_active=True)
+    
+    # Pagination
+    paginator = Paginator(announcements.order_by('-publish_date'), 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'announcements': page_obj,
+        'categories': categories,
+        'priorities': Announcement.PRIORITY_CHOICES,
+        'selected_category': category,
+        'selected_priority': priority,
+        'selected_status': status,
+        'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+    }
+    
+    return render(request, 'announcement_list.html', context)
+
+
+@login_required
+def announcement_detail(request, announcement_id):
+    """
+    View to show announcement details and mark as read
+    """
+    announcement = get_object_or_404(Announcement, id=announcement_id, is_published=True)
+    
+    # Mark as read if user hasn't read it yet
+    if request.user not in announcement.read_by.all():
+        announcement.read_by.add(request.user)
+    
+    context = {
+        'announcement': announcement,
+        'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+    }
+    
+    return render(request, 'announcement_detail.html', context)
+
+
+@login_required
+def message_inbox(request):
+    """
+    View to show message inbox
+    """
+    # Get filter parameters
+    folder = request.GET.get('folder', 'inbox')  # inbox, sent, archived, important
+    search = request.GET.get('search', '')
+    
+    if folder == 'sent':
+        messages = Message.objects.filter(sender=request.user)
+    elif folder == 'archived':
+        messages = Message.objects.filter(recipients=request.user, status='archived')
+    elif folder == 'important':
+        messages = Message.objects.filter(recipients=request.user, is_important=True)
+    else:  # inbox
+        messages = Message.objects.filter(recipients=request.user).exclude(status='archived')
+    
+    # Apply search filter
+    if search:
+        messages = messages.filter(
+            Q(subject__icontains=search) |
+            Q(body__icontains=search) |
+            Q(sender__username__icontains=search) |
+            Q(sender__first_name__icontains=search) |
+            Q(sender__last_name__icontains=search)
+        )
+    
+    # Get unread messages count for folder tabs
+    inbox_count = Message.objects.filter(recipients=request.user).exclude(status__in=['read', 'archived']).count()
+    important_count = Message.objects.filter(recipients=request.user, is_important=True).exclude(status='archived').count()
+    archived_count = Message.objects.filter(recipients=request.user, status='archived').count()
+    
+    # Pagination
+    paginator = Paginator(messages.order_by('-sent_at'), 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'messages': page_obj,
+        'folder': folder,
+        'search_query': search,
+        'inbox_count': inbox_count,
+        'important_count': important_count,
+        'archived_count': archived_count,
+        'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+    }
+    
+    return render(request, 'message_inbox.html', context)
+
+
+@login_required
+def message_detail(request, message_id):
+    """
+    View to show message details and mark as read
+    """
+    message = get_object_or_404(Message, id=message_id)
+    
+    # Check if user has permission to view this message
+    if request.user != message.sender and request.user not in message.recipients.all():
+        messages.error(request, 'You do not have permission to view this message.')
+        return redirect('message_inbox')
+    
+    # Mark as read if user is a recipient
+    if request.user in message.recipients.all():
+        message.mark_as_read(request.user)
+    
+    context = {
+        'message': message,
+        'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+    }
+    
+    return render(request, 'message_detail.html', context)
+
+
+@login_required
+def send_message(request):
+    """
+    View to send a new message
+    """
+    if request.method == 'POST':
+        recipient_ids = request.POST.getlist('recipients')
+        subject = request.POST.get('subject')
+        body = request.POST.get('body')
+        is_important = request.POST.get('is_important') == 'on'
+        
+        # Validate required fields
+        errors = {}
+        if not recipient_ids:
+            errors['recipients'] = 'At least one recipient is required'
+        if not subject:
+            errors['subject'] = 'Subject is required'
+        if not body:
+            errors['body'] = 'Message body is required'
+        
+        if errors:
+            # Get all active users for recipient selection
+            users = User.objects.filter(is_active=True).exclude(id=request.user.id)
+            context = {
+                'users': users,
+                'errors': errors,
+                'form_data': request.POST,
+                'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+            }
+            return render(request, 'send_message.html', context)
+        
+        try:
+            # Create the message
+            message = Message.objects.create(
+                sender=request.user,
+                subject=subject,
+                body=body,
+                is_important=is_important
+            )
+            
+            # Add recipients
+            recipients = User.objects.filter(id__in=recipient_ids)
+            message.recipients.set(recipients)
+            
+            # Handle file attachments
+            files = request.FILES.getlist('attachments')
+            for file in files:
+                attachment = MessageAttachment.objects.create(
+                    file=file,
+                    original_filename=file.name,
+                    uploaded_by=request.user,
+                    file_size=file.size
+                )
+                message.attachments.add(attachment)
+            
+            messages.success(request, 'Message sent successfully!')
+            return redirect('message_inbox')
+            
+        except Exception as e:
+            messages.error(request, f'Error sending message: {str(e)}')
+            return redirect('send_message')
+    
+    else:
+        # GET request - show empty form
+        users = User.objects.filter(is_active=True).exclude(id=request.user.id)
+        
+        context = {
+            'users': users,
+            'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+        }
+        return render(request, 'send_message.html', context)
+
+
+@login_required
+def discussion_list(request):
+    """
+    View to list all discussion threads
+    """
+    # Get filter parameters
+    category = request.GET.get('category')
+    sort = request.GET.get('sort', 'recent')  # recent, popular, unanswered
+    
+    threads = DiscussionThread.objects.all()
+    
+    # Apply filters
+    if category and category != 'all':
+        threads = threads.filter(category__id=category)
+    
+    # Apply sorting
+    if sort == 'popular':
+        threads = threads.annotate(reply_count=Count('replies')).order_by('-reply_count', '-updated_at')
+    elif sort == 'unanswered':
+        threads = threads.annotate(reply_count=Count('replies')).filter(reply_count=0).order_by('-created_at')
+    else:  # recent
+        threads = threads.order_by('-is_pinned', '-updated_at')
+    
+    # Get categories for filter
+    categories = CommunicationCategory.objects.filter(is_active=True)
+    
+    # Pagination
+    paginator = Paginator(threads, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'threads': page_obj,
+        'categories': categories,
+        'selected_category': category,
+        'selected_sort': sort,
+        'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+    }
+    
+    return render(request, 'discussion_list.html', context)
+
+
+@login_required
+def discussion_detail(request, thread_id):
+    """
+    View to show discussion thread details
+    """
+    thread = get_object_or_404(DiscussionThread, id=thread_id)
+    
+    # Increment view count
+    thread.views += 1
+    thread.save()
+    
+    # Handle reply submission
+    if request.method == 'POST':
+        content = request.POST.get('content')
+        parent_reply_id = request.POST.get('parent_reply')
+        
+        if not content:
+            messages.error(request, 'Reply content cannot be empty.')
+        else:
+            try:
+                parent_reply = None
+                if parent_reply_id:
+                    parent_reply = DiscussionReply.objects.get(id=parent_reply_id)
+                
+                DiscussionReply.objects.create(
+                    thread=thread,
+                    author=request.user,
+                    content=content,
+                    parent_reply=parent_reply
+                )
+                
+                # Update thread's updated_at timestamp
+                thread.updated_at = timezone.now()
+                thread.save()
+                
+                messages.success(request, 'Reply posted successfully!')
+                return redirect('discussion_detail', thread_id=thread.id)
+                
+            except Exception as e:
+                messages.error(request, f'Error posting reply: {str(e)}')
+    
+    # Get all replies for this thread
+    replies = DiscussionReply.objects.filter(thread=thread, is_approved=True).order_by('created_at')
+    
+    context = {
+        'thread': thread,
+        'replies': replies,
+        'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+    }
+    
+    return render(request, 'discussion_detail.html', context)
+
+
+@login_required
+def create_discussion(request):
+    """
+    View to create a new discussion thread
+    """
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        content = request.POST.get('content')
+        category_id = request.POST.get('category')
+        
+        # Validate required fields
+        errors = {}
+        if not title:
+            errors['title'] = 'Title is required'
+        if not content:
+            errors['content'] = 'Content is required'
+        if not category_id:
+            errors['category'] = 'Category is required'
+        
+        if errors:
+            categories = CommunicationCategory.objects.filter(is_active=True)
+            context = {
+                'categories': categories,
+                'errors': errors,
+                'form_data': request.POST,
+                'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+            }
+            return render(request, 'create_discussion.html', context)
+        
+        try:
+            category = CommunicationCategory.objects.get(id=category_id)
+            
+            DiscussionThread.objects.create(
+                title=title,
+                content=content,
+                author=request.user,
+                category=category
+            )
+            
+            messages.success(request, 'Discussion thread created successfully!')
+            return redirect('discussion_list')
+            
+        except Exception as e:
+            messages.error(request, f'Error creating discussion: {str(e)}')
+            return redirect('create_discussion')
+    
+    else:
+        # GET request - show empty form
+        categories = CommunicationCategory.objects.filter(is_active=True)
+        
+        context = {
+            'categories': categories,
+            'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+        }
+        return render(request, 'create_discussion.html', context)
+
+
+@login_required
+def notification_preferences(request):
+    """
+    View to manage notification preferences
+    """
+    try:
+        preferences = UserNotificationPreference.objects.get(user=request.user)
+    except UserNotificationPreference.DoesNotExist:
+        preferences = UserNotificationPreference.objects.create(user=request.user)
+    
+    if request.method == 'POST':
+        # Update email preferences
+        preferences.email_announcements = request.POST.get('email_announcements') == 'on'
+        preferences.email_messages = request.POST.get('email_messages') == 'on'
+        preferences.email_thread_replies = request.POST.get('email_thread_replies') == 'on'
+        preferences.email_mentions = request.POST.get('email_mentions') == 'on'
+        
+        # Update push preferences
+        preferences.push_announcements = request.POST.get('push_announcements') == 'on'
+        preferences.push_messages = request.POST.get('push_messages') == 'on'
+        preferences.push_thread_replies = request.POST.get('push_thread_replies') == 'on'
+        
+        # Update in-app preferences
+        preferences.in_app_announcements = request.POST.get('in_app_announcements') == 'on'
+        preferences.in_app_messages = request.POST.get('in_app_messages') == 'on'
+        preferences.in_app_thread_replies = request.POST.get('in_app_thread_replies') == 'on'
+        
+        # Update frequency
+        preferences.email_digest_frequency = request.POST.get('email_digest_frequency', 'immediate')
+        
+        preferences.save()
+        
+        messages.success(request, 'Notification preferences updated successfully!')
+        return redirect('notification_preferences')
+    
+    context = {
+        'preferences': preferences,
+        'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+    }
+    
+    return render(request, 'notification_preferences.html', context)

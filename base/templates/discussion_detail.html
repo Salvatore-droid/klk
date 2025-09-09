@@ -1,0 +1,461 @@
+{% extends 'index.html' %}
+{% load static %}
+
+{% block content %}
+
+<style>
+    .discussion-detail {
+        padding: 2rem;
+        animation: fadeIn 0.8s ease;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .detail-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--gray-light);
+    }
+
+    .detail-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 1rem;
+    }
+
+    .discussion-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+        color: var(--gray);
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .meta-item i {
+        font-size: 0.8rem;
+    }
+
+    .discussion-content {
+        background-color: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 2rem;
+        box-shadow: var(--shadow);
+        margin-bottom: 2rem;
+    }
+
+    .content-body {
+        line-height: 1.8;
+        color: var(--dark);
+        margin-bottom: 2rem;
+    }
+
+    .content-body p {
+        margin-bottom: 1rem;
+    }
+
+    .discussion-stats {
+        display: flex;
+        gap: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--gray-light);
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--gray);
+    }
+
+    .stat-count {
+        font-weight: 600;
+        color: var(--dark);
+    }
+
+    .replies-section {
+        margin-top: 2rem;
+    }
+
+    .replies-header {
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .replies-header h2 {
+        font-size: 1.5rem;
+        color: var(--dark);
+    }
+
+    .reply-item {
+        background-color: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow);
+    }
+
+    .reply-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--gray-light);
+    }
+
+    .reply-author {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .author-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--primary-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+        font-weight: 600;
+    }
+
+    .author-info h4 {
+        font-weight: 600;
+        color: var(--dark);
+        margin-bottom: 0.25rem;
+    }
+
+    .author-role {
+        font-size: 0.8rem;
+        color: var(--gray);
+    }
+
+    .reply-time {
+        font-size: 0.85rem;
+        color: var(--gray);
+    }
+
+    .reply-content {
+        line-height: 1.7;
+        color: var(--dark);
+    }
+
+    .reply-content p {
+        margin-bottom: 1rem;
+    }
+
+    .reply-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--gray-light);
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--gray);
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: var(--transition);
+    }
+
+    .action-btn:hover {
+        color: var(--primary);
+    }
+
+    .reply-form-section {
+        background-color: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 2rem;
+        box-shadow: var(--shadow);
+        margin-top: 2rem;
+    }
+
+    .reply-form-section h3 {
+        margin-bottom: 1.5rem;
+        color: var(--dark);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--dark);
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--gray-light);
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.2);
+    }
+
+    textarea.form-control {
+        min-height: 150px;
+        resize: vertical;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        border: none;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-primary {
+        background-color: var(--primary);
+        color: var(--white);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background-color: var(--gray-light);
+        color: var(--dark);
+    }
+
+    .btn-secondary:hover {
+        background-color: var(--gray);
+        color: var(--white);
+    }
+
+    .category-badge {
+        padding: 0.3rem 0.8rem;
+        border-radius: 50px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        background-color: {{ thread.category.color }}20;
+        color: {{ thread.category.color }};
+    }
+
+    .empty-replies {
+        text-align: center;
+        padding: 2rem;
+        background-color: var(--white);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow);
+    }
+
+    .empty-replies i {
+        font-size: 2rem;
+        color: var(--gray-light);
+        margin-bottom: 1rem;
+    }
+
+    .empty-replies p {
+        color: var(--gray);
+    }
+
+    @media (max-width: 768px) {
+        .discussion-meta {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .discussion-stats {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .reply-header {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="discussion-detail">
+    <div class="detail-header">
+        <h1>{{ thread.title }}</h1>
+        
+        <div class="discussion-meta">
+            <div class="meta-item">
+                <i class="fas fa-user"></i>
+                <span>By {{ thread.author.get_full_name|default:thread.author.username }}</span>
+            </div>
+            <div class="meta-item">
+                <i class="fas fa-clock"></i>
+                <span>Started {{ thread.created_at|date:"M d, Y" }}</span>
+            </div>
+            <div class="meta-item">
+                <i class="fas fa-tag"></i>
+                <span class="category-badge">{{ thread.category.name }}</span>
+            </div>
+            {% if thread.is_pinned %}
+            <div class="meta-item">
+                <i class="fas fa-thumbtack" style="color: var(--warning);"></i>
+                <span>Pinned</span>
+            </div>
+            {% endif %}
+            {% if thread.is_locked %}
+            <div class="meta-item">
+                <i class="fas fa-lock" style="color: var(--danger);"></i>
+                <span>Locked</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="discussion-content">
+        <div class="content-body">
+            {{ thread.content|linebreaks }}
+        </div>
+        
+        <div class="discussion-stats">
+            <div class="stat-item">
+                <i class="fas fa-eye"></i>
+                <span class="stat-count">{{ thread.views }}</span>
+                <span>views</span>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-comments"></i>
+                <span class="stat-count">{{ thread.reply_count }}</span>
+                <span>replies</span>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-clock"></i>
+                <span>Last updated {{ thread.updated_at|timesince }} ago</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="replies-section">
+        <div class="replies-header">
+            <h2>Replies ({{ thread.reply_count }})</h2>
+        </div>
+        
+        {% if replies %}
+            {% for reply in replies %}
+            <div class="reply-item">
+                <div class="reply-header">
+                    <div class="reply-author">
+                        <div class="author-avatar">
+                            {{ reply.author.first_name|first|upper }}{{ reply.author.last_name|first|upper }}
+                        </div>
+                        <div class="author-info">
+                            <h4>{{ reply.author.get_full_name|default:reply.author.username }}</h4>
+                            <div class="author-role">{{ reply.author.profile.get_role_display|default:"Member" }}</div>
+                        </div>
+                    </div>
+                    <div class="reply-time">
+                        {{ reply.created_at|timesince }} ago
+                    </div>
+                </div>
+                
+                <div class="reply-content">
+                    {{ reply.content|linebreaks }}
+                </div>
+                
+                <div class="reply-actions">
+                    <a href="#" class="action-btn">
+                        <i class="fas fa-thumbs-up"></i> Like
+                    </a>
+                    <a href="#" class="action-btn">
+                        <i class="fas fa-reply"></i> Reply
+                    </a>
+                    <a href="#" class="action-btn">
+                        <i class="fas fa-flag"></i> Report
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-replies">
+                <i class="fas fa-comments"></i>
+                <p>No replies yet. Be the first to reply to this discussion!</p>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if not thread.is_locked %}
+    <div class="reply-form-section">
+        <h3><i class="fas fa-reply"></i> Post a Reply</h3>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="content">Your Reply</label>
+                <textarea name="content" id="content" class="form-control" placeholder="Type your reply here..." rows="6" required></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Post Reply
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('content').value=''">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+        </form>
+    </div>
+    {% else %}
+    <div class="reply-form-section">
+        <div class="empty-replies">
+            <i class="fas fa-lock"></i>
+            <p>This discussion has been locked. No further replies can be posted.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="form-actions" style="margin-top: 2rem;">
+        <a href="{% url 'discussion_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Discussions
+        </a>
+        {% if request.user == thread.author or request.user.is_staff %}
+        <a href="/admin/communication/discussionthread/{{ thread.id }}/change/" class="btn btn-primary" target="_blank">
+            <i class="fas fa-edit"></i> Edit Thread
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
