@@ -308,6 +308,60 @@
         box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.2);
     }
 
+    /* Search and Filter Container */
+    .search-filter-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        padding: 1.25rem;
+        background-color: var(--lighter);
+        border-radius: var(--border-radius);
+    }
+
+    .search-group {
+        flex: 2;
+        min-width: 300px;
+    }
+
+    .search-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--dark);
+    }
+
+    .search-input-group {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 0.65rem 1rem;
+        border-radius: var(--border-radius);
+        border: 1px solid var(--gray-light);
+        font-size: 0.925rem;
+        transition: var(--transition);
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.2);
+    }
+
+    .search-select {
+        width: 120px;
+        padding: 0.65rem 1rem;
+        border-radius: var(--border-radius);
+        border: 1px solid var(--gray-light);
+        background-color: var(--white);
+        font-size: 0.925rem;
+        transition: var(--transition);
+    }
+
     /* DataTable Customization */
     .dataTables_wrapper {
         width: 100%;
@@ -541,8 +595,16 @@
             justify-content: center;
         }
         
-        .filters-section {
+        .filters-section, .search-filter-container {
             flex-direction: column;
+        }
+        
+        .search-input-group {
+            flex-direction: column;
+        }
+        
+        .search-select {
+            width: 100%;
         }
         
         table.dataTable thead {
@@ -663,10 +725,6 @@
             <p>Comprehensive overview and management of all student beneficiaries</p>
         </div>
         <div class="header-right">
-            <form method="GET" action="{% url 'beneficiaries_list' %}" class="search-bar">
-                <input type="text" name="search" placeholder="Search beneficiaries..." value="{{ request.GET.search }}">
-                <i class="fas fa-search"></i>
-            </form>
             <div class="header-actions">
                 <div class="notification-btn tooltip" data-tooltip="Notifications">
                     <i class="fas fa-bell"></i>
@@ -676,7 +734,11 @@
                     <i class="fas fa-envelope"></i>
                 </div>
                 <div class="profile-btn">
-                    <img src="{% static 'img/avatar.png' %}" alt="Profile">
+                {% if user.profile_picture %}
+                    <img src="{{ user.profile_picture.url }}" alt="Profile picture">
+                {% else %}
+                    <img src="{% static 'images/avatar.jpg' %}" alt="Default profile picture">
+                {% endif %}
                 </div>
             </div>
         </div>
@@ -696,46 +758,75 @@
             </div>
         </div>
 
-        <!-- Filters Section -->
-        <form method="GET" action="{% url 'beneficiaries_list' %}" class="filters-section">
+        <!-- Search and Filter Container -->
+        <form method="GET" action="{% url 'beneficiaries_list' %}" class="search-filter-container">
+            <div class="search-group">
+                <label for="search">Search Beneficiaries</label>
+                <div class="search-input-group">
+                    <input type="text" id="search" name="search" class="search-input" 
+                           placeholder="Search..." value="{{ search_query }}">
+                    <select name="search_by" class="search-select">
+                        <option value="name" {% if search_by == 'name' %}selected{% endif %}>Name</option>
+                        <option value="admission_number" {% if search_by == 'admission_number' %}selected{% endif %}>Admission Number</option>
+                        <option value="school" {% if search_by == 'school' %}selected{% endif %}>School</option>
+                    </select>
+                </div>
+            </div>
+            
             <div class="filter-group">
-                <label for="education_level">Education Level</label>
-                <select id="education_level" name="education_level" class="filter-select">
-                    <option value="">All Levels</option>
-                    {% for level in education_levels %}
-                        <option value="{{ level.0 }}" {% if request.GET.education_level == level.0|stringformat:"s" %}selected{% endif %}>{{ level.1 }}</option>
+                <label for="school">School</label>
+                <select id="school" name="school" class="filter-select">
+                    <option value="">All Schools</option>
+                    {% for school in schools %}
+                        <option value="{{ school }}" {% if school_filter == school %}selected{% endif %}>{{ school }}</option>
                     {% endfor %}
                 </select>
             </div>
+            
             <div class="filter-group">
-                <label for="status">Status</label>
-                <select id="status" name="status" class="filter-select">
-                    <option value="">All Statuses</option>
-                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
-                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
-                    <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
-                    <option value="graduated" {% if request.GET.status == 'graduated' %}selected{% endif %}>Graduated</option>
+                <label for="gender">Gender</label>
+                <select id="gender" name="gender" class="filter-select">
+                    <option value="">All Genders</option>
+                    {% for gender in genders %}
+                        <option value="{{ gender.0 }}" {% if gender_filter == gender.0 %}selected{% endif %}>{{ gender.1 }}</option>
+                    {% endfor %}
                 </select>
             </div>
+            
             <div class="filter-group">
-                <label for="year">Year</label>
-                <select id="year" name="year" class="filter-select">
+                <label for="form">Form</label>
+                <select id="form" name="form" class="filter-select">
+                    <option value="">All Forms</option>
+                    {% for form in forms %}
+                        <option value="{{ form.0 }}" {% if form_filter == form.0 %}selected{% endif %}>{{ form.1 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="year_joined">Year Joined</label>
+                <select id="year_joined" name="year_joined" class="filter-select">
                     <option value="">All Years</option>
-                    {% for year in enrollment_years %}
-                        <option value="{{ year }}" {% if request.GET.year == year|stringformat:"s" %}selected{% endif %}>{{ year }}</option>
+                    {% for year in years_joined %}
+                        <option value="{{ year.year }}" {% if year_joined_filter == year.year|stringformat:"s" %}selected{% endif %}>{{ year.year }}</option>
                     {% endfor %}
                 </select>
             </div>
+            
             <div class="filter-group">
                 <label for="sponsor">Sponsor</label>
                 <select id="sponsor" name="sponsor" class="filter-select">
                     <option value="">All Sponsors</option>
                     {% for sponsor in sponsors %}
-                        <option value="{{ sponsor.id }}" {% if request.GET.sponsor == sponsor.id|stringformat:"s" %}selected{% endif %}>{{ sponsor.name }}</option>
+                        <option value="{{ sponsor.id }}" {% if sponsor_filter == sponsor.id|stringformat:"s" %}selected{% endif %}>{{ sponsor.name }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <button type="submit" class="btn btn-primary" style="align-self: flex-end;">Apply Filters</button>
+            
+            <div class="filter-group" style="align-self: flex-end;">
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                <a href="{% url 'beneficiaries_list' %}" class="btn btn-secondary">Clear</a>
+            </div>
         </form>
 
         <!-- Beneficiaries Table -->
@@ -870,7 +961,7 @@ $(document).ready(function() {
     });
 
     // Submit filter form on select change
-    $('#education_level, #status, #year, #sponsor').on('change', function() {
+    $('#education_level, #status, #year, #sponsor, #school, #gender, #form, #year_joined').on('change', function() {
         $(this).closest('form').submit();
     });
 

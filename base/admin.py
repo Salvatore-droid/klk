@@ -11,9 +11,9 @@ class CustomUserAdmin(UserAdmin):
     filter_horizontal = ('groups', 'user_permissions',)
 
 class BeneficiaryAdmin(admin.ModelAdmin):
-    list_display = ('full_name', 'current_level', 'institution', 'sponsor', 'status')
-    list_filter = ('current_level', 'institution', 'sponsor', 'is_active')
-    search_fields = ('first_name', 'last_name', 'national_id')
+    list_display = ('full_name', 'current_level', 'institution', 'sponsor', 'status', 'current_school')
+    list_filter = ('current_level', 'institution', 'sponsor', 'is_active', 'guardian_type')
+    search_fields = ('first_name', 'last_name', 'national_id', 'current_school', 'previous_school', 'guardian_full_name')
     raw_id_fields = ('user',)
     date_hierarchy = 'enrollment_date'
     ordering = ('last_name', 'first_name')

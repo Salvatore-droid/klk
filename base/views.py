@@ -119,6 +119,13 @@ def beneficiaries_list(request):
     year = request.GET.get('year')
     sponsor_id = request.GET.get('sponsor')
     search_query = request.GET.get('search', '')
+    school_filter = request.GET.get('school')
+    gender_filter = request.GET.get('gender')
+    form_filter = request.GET.get('form')
+    year_joined_filter = request.GET.get('year_joined')
+    sponsor_filter = request.GET.get('sponsor')
+    search_query = request.GET.get('search', '')
+    search_by = request.GET.get('search_by', 'name')  # name, admission_number, school
 
     # Start with all active beneficiaries
     beneficiaries = Beneficiary.objects.filter(is_active=True).select_related('institution', 'sponsor')
@@ -143,12 +150,42 @@ def beneficiaries_list(request):
     if sponsor_id:
         beneficiaries = beneficiaries.filter(sponsor__id=sponsor_id)
 
-    if search_query:
+    if school_filter:
         beneficiaries = beneficiaries.filter(
-            Q(first_name__icontains=search_query) |
-            Q(last_name__icontains=search_query) |
-            Q(national_id__icontains=search_query)
+            Q(current_school__icontains=school_filter) | 
+            Q(previous_school__icontains=school_filter) |
+            Q(institution__name__icontains=school_filter)
         )
+    
+    if gender_filter:
+        beneficiaries = beneficiaries.filter(gender=gender_filter)
+    
+    if form_filter:
+        beneficiaries = beneficiaries.filter(current_level=form_filter)
+    
+    if year_joined_filter:
+        beneficiaries = beneficiaries.filter(enrollment_date__year=year_joined_filter)
+    
+    if sponsor_filter:
+        beneficiaries = beneficiaries.filter(sponsor__id=sponsor_filter)
+
+    # Apply search
+    if search_query:
+        if search_by == 'admission_number':
+            # Assuming you have an admission_number field
+            beneficiaries = beneficiaries.filter(admission_number__icontains=search_query)
+        elif search_by == 'school':
+            beneficiaries = beneficiaries.filter(
+                Q(current_school__icontains=search_query) | 
+                Q(previous_school__icontains=search_query) |
+                Q(institution__name__icontains=search_query)
+            )
+        else:  # search by name
+            beneficiaries = beneficiaries.filter(
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query) |
+                Q(guardian_full_name__icontains=search_query)
+            )
 
     # Get distinct enrollment years for filter dropdown
     enrollment_years = Beneficiary.objects.dates('enrollment_date', 'year').order_by('-enrollment_date')
@@ -160,16 +197,30 @@ def beneficiaries_list(request):
 
     context = {
         'beneficiaries': page_obj,
+        'schools': Beneficiary.objects.filter(is_active=True).exclude(current_school__isnull=True).exclude(current_school='').values_list('current_school', flat=True).distinct(),
+        'genders': Beneficiary.GENDER_CHOICES,
+        'forms': Beneficiary.LEVEL_CHOICES,
+        'years_joined': Beneficiary.objects.dates('enrollment_date', 'year').order_by('-enrollment_date'),
+        'sponsors': Sponsor.objects.all(),
+        'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+        'is_paginated': paginator.num_pages > 1,
+        'search_by': search_by,
+        'search_query': search_query,
+        'school_filter': school_filter,
+        'gender_filter': gender_filter,
+        'form_filter': form_filter,
+        'year_joined_filter': year_joined_filter,
+        'sponsor_filter': sponsor_filter,
         'education_levels': Beneficiary.LEVEL_CHOICES,
         'enrollment_years': [date.year for date in enrollment_years],
         'sponsors': Sponsor.objects.all(),
         'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
         'is_paginated': paginator.num_pages > 1,
+
     }
 
     return render(request, 'benef.html', context)
 
-# views.py
 # views.py
 @login_required
 def add_beneficiary(request):
@@ -187,6 +238,27 @@ def add_beneficiary(request):
         enrollment_date = request.POST.get('enrollment_date')
         sponsor_id = request.POST.get('sponsor')
         photo = request.FILES.get('photo')
+        previous_school = request.POST.get('previous_school')
+        current_school = request.POST.get('current_school')
+        admission_letter = request.FILES.get('admission_letter')
+        fee_structure = request.FILES.get('fee_structure')
+        fee_statement = request.FILES.get('fee_statement')
+        receipts = request.FILES.get('receipts')
+        letters = request.FILES.get('letters')
+        
+        # Parent/Guardian details
+        guardian_type = request.POST.get('guardian_type')
+        guardian_full_name = request.POST.get('guardian_full_name')
+        guardian_phone = request.POST.get('guardian_phone')
+        guardian_id_copy = request.FILES.get('guardian_id_copy')
+        guardian_email = request.POST.get('guardian_email')
+        
+        # Residence information
+        residence_address = request.POST.get('residence_address')
+        residence_directions = request.POST.get('residence_directions')
+        
+        # Referrals
+        referral_source = request.POST.get('referral_source')
         
         # Validate required fields
         errors = {}
@@ -233,9 +305,29 @@ def add_beneficiary(request):
                 institution_id=institution_id,
                 enrollment_date=enrollment_date,
                 sponsor_id=sponsor_id,
-                is_active=True
+                is_active=True,
+                previous_school=previous_school,
+                current_school=current_school,
+                guardian_type=guardian_type,
+                guardian_full_name=guardian_full_name,
+                guardian_phone=guardian_phone,
+                guardian_email=guardian_email,
+                residence_address=residence_address,
+                residence_directions=residence_directions,
+                referral_source=referral_source,
             )
-            
+            if admission_letter:
+                beneficiary.admission_letter = admission_letter
+            if fee_structure:
+                beneficiary.fee_structure = fee_structure
+            if fee_statement:
+                beneficiary.fee_statement = fee_statement
+            if receipts:
+                beneficiary.receipts = receipts
+            if letters:
+                beneficiary.letters = letters
+            if guardian_id_copy:
+                beneficiary.guardian_id_copy = guardian_id_copy
             if photo:
                 beneficiary.photo = photo
                 
@@ -258,7 +350,8 @@ def add_beneficiary(request):
             'sponsors': sponsors,
             'education_levels': Beneficiary.LEVEL_CHOICES,
             'genders': Beneficiary.GENDER_CHOICES,
-            'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count()
+            'unread_notifications': Notification.objects.filter(user=request.user, is_read=False).count(),
+            'guardian_types': Beneficiary.GUARDIAN_TYPE_CHOICES,
         }
         return render(request, 'beneficiary_add.html', context)
 

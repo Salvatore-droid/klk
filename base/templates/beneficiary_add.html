@@ -499,6 +499,119 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Beneficiary Data Entry Section -->
+            <div class="form-section">
+                <h3>Education Documents</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="previous_school">Previous School</label>
+                        <input type="text" id="previous_school" name="previous_school" class="form-control"
+                            value="{{ form_data.previous_school }}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="current_school">Current/Joining School</label>
+                        <input type="text" id="current_school" name="current_school" class="form-control"
+                            value="{{ form_data.current_school }}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="admission_letter">Admission Letter</label>
+                        <input type="file" id="admission_letter" name="admission_letter" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fee_structure">Fee Structure</label>
+                        <input type="file" id="fee_structure" name="fee_structure" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fee_statement">Fee Statement</label>
+                        <input type="file" id="fee_statement" name="fee_statement" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="receipts">Receipts</label>
+                        <input type="file" id="receipts" name="receipts" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="letters">Letters</label>
+                        <input type="file" id="letters" name="letters" class="form-control">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parent/Guardian Details Section -->
+            <div class="form-section">
+                <h3>Parent/Guardian Details</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="guardian_type">Guardian Type</label>
+                        <select id="guardian_type" name="guardian_type" class="form-control">
+                            <option value="">Select Type</option>
+                            {% for type in guardian_types %}
+                                <option value="{{ type.0 }}"
+                                    {% if form_data.guardian_type == type.0 %}selected{% endif %}>
+                                    {{ type.1 }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="guardian_full_name">Full Name</label>
+                        <input type="text" id="guardian_full_name" name="guardian_full_name" class="form-control"
+                            value="{{ form_data.guardian_full_name }}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="guardian_phone">Phone Number</label>
+                        <input type="text" id="guardian_phone" name="guardian_phone" class="form-control"
+                            value="{{ form_data.guardian_phone }}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="guardian_id_copy">ID Copy</label>
+                        <input type="file" id="guardian_id_copy" name="guardian_id_copy" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="guardian_email">Email</label>
+                        <input type="email" id="guardian_email" name="guardian_email" class="form-control"
+                            value="{{ form_data.guardian_email }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Residence Information Section -->
+            <div class="form-section">
+                <h3>Residence Information</h3>
+                <div class="form-grid">
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label for="residence_address">Address</label>
+                        <textarea id="residence_address" name="residence_address" class="form-control" rows="3">{{ form_data.residence_address }}</textarea>
+                    </div>
+                    
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label for="residence_directions">Directions</label>
+                        <textarea id="residence_directions" name="residence_directions" class="form-control" rows="3">{{ form_data.residence_directions }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Referrals Section -->
+            <div class="form-section">
+                <h3>Referral Information</h3>
+                <div class="form-grid">
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label for="referral_source">How did you hear about us?</label>
+                        <input type="text" id="referral_source" name="referral_source" class="form-control"
+                            value="{{ form_data.referral_source }}" placeholder="e.g., Friend, Social Media, School, etc.">
+                    </div>
+                </div>
+            </div>
             
             <!-- Sponsorship Information Section -->
             <div class="form-section">

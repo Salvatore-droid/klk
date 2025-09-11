@@ -204,6 +204,32 @@ class Beneficiary(models.Model):
     sponsorship_start_date = models.DateField(blank=True, null=True)
     sponsorship_end_date = models.DateField(blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
+    previous_school = models.CharField(max_length=200, blank=True, null=True)
+    current_school = models.CharField(max_length=200, blank=True, null=True)
+    admission_letter = models.FileField(upload_to='beneficiary_docs/admission_letters/', blank=True, null=True)
+    fee_structure = models.FileField(upload_to='beneficiary_docs/fee_structures/', blank=True, null=True)
+    fee_statement = models.FileField(upload_to='beneficiary_docs/fee_statements/', blank=True, null=True)
+    receipts = models.FileField(upload_to='beneficiary_docs/receipts/', blank=True, null=True)
+    letters = models.FileField(upload_to='beneficiary_docs/letters/', blank=True, null=True)
+    
+    # Parent/Guardian details
+    GUARDIAN_TYPE_CHOICES = (
+        ('single_parent', 'Single Parent'),
+        ('both_parents', 'Both Parents'),
+        ('guardian', 'Guardian'),
+    )
+    guardian_type = models.CharField(max_length=20, choices=GUARDIAN_TYPE_CHOICES, blank=True, null=True)
+    guardian_full_name = models.CharField(max_length=200, blank=True, null=True)
+    guardian_phone = models.CharField(max_length=20, blank=True, null=True)
+    guardian_id_copy = models.FileField(upload_to='beneficiary_docs/guardian_ids/', blank=True, null=True)
+    guardian_email = models.EmailField(blank=True, null=True)
+    
+    # Residence information
+    residence_address = models.TextField(blank=True, null=True)
+    residence_directions = models.TextField(blank=True, null=True)
+    
+    # Referrals
+    referral_source = models.CharField(max_length=200, blank=True, null=True)
     
     STATUS_CHOICES = (
         ('active', 'Active'),

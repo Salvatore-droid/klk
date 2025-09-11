@@ -188,6 +188,54 @@
         word-break: break-word;
     }
 
+    /* Document List */
+    .document-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .document-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem;
+        background-color: var(--lighter);
+        border-radius: var(--border-radius);
+        transition: var(--transition);
+    }
+
+    .document-item:hover {
+        background-color: var(--primary-light);
+    }
+
+    .document-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .document-icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--primary);
+        color: var(--white);
+        border-radius: 6px;
+        font-size: 0.9rem;
+    }
+
+    .document-name {
+        font-weight: 500;
+    }
+
+    .document-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
     /* Timeline */
     .timeline {
         position: relative;
@@ -316,6 +364,11 @@
         box-shadow: var(--shadow);
     }
 
+    .btn-sm {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+    }
+
     .btn i {
         margin-right: 8px;
         font-size: 0.9rem;
@@ -336,6 +389,17 @@
         }
         
         .profile-header-actions {
+            width: 100%;
+            justify-content: flex-end;
+        }
+        
+        .document-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        
+        .document-actions {
             width: 100%;
             justify-content: flex-end;
         }
@@ -455,6 +519,67 @@
                 </div>
             </div>
 
+            <!-- Parent/Guardian Information Card -->
+            <div class="profile-card">
+                <div class="profile-card-header">
+                    <h3>Parent/Guardian Information</h3>
+                </div>
+                <div class="profile-card-body">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Guardian Type</div>
+                            <div class="info-value">{{ beneficiary.get_guardian_type_display|default:"--" }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Full Name</div>
+                            <div class="info-value">{{ beneficiary.guardian_full_name|default:"--" }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Phone Number</div>
+                            <div class="info-value">{{ beneficiary.guardian_phone|default:"--" }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Email</div>
+                            <div class="info-value">{{ beneficiary.guardian_email|default:"--" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Residence Information Card -->
+            <div class="profile-card">
+                <div class="profile-card-header">
+                    <h3>Residence Information</h3>
+                </div>
+                <div class="profile-card-body">
+                    <div class="info-grid">
+                        <div class="info-item" style="grid-column: span 2;">
+                            <div class="info-label">Address</div>
+                            <div class="info-value">{{ beneficiary.residence_address|default:"--" }}</div>
+                        </div>
+                        <div class="info-item" style="grid-column: span 2;">
+                            <div class="info-label">Directions</div>
+                            <div class="info-value">{{ beneficiary.residence_directions|default:"--" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Referral Information Card -->
+            <div class="profile-card">
+                <div class="profile-card-header">
+                    <h3>Referral Information</h3>
+                </div>
+                <div class="profile-card-body">
+                    <div class="info-grid">
+                        <div class="info-item" style="grid-column: span 2;">
+                            <div class="info-label">How did you hear about us?</div>
+                            <div class="info-value">{{ beneficiary.referral_source|default:"--" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Notes Card -->
             {% if beneficiary.notes %}
             <div class="profile-card">
@@ -486,6 +611,14 @@
                             <div class="info-value">{{ beneficiary.institution.name|default:"--" }}</div>
                         </div>
                         <div class="info-item">
+                            <div class="info-label">Previous School</div>
+                            <div class="info-value">{{ beneficiary.previous_school|default:"--" }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Current School</div>
+                            <div class="info-value">{{ beneficiary.current_school|default:"--" }}</div>
+                        </div>
+                        <div class="info-item">
                             <div class="info-label">Enrollment Date</div>
                             <div class="info-value">{{ beneficiary.enrollment_date|date:"F j, Y" }}</div>
                         </div>
@@ -493,6 +626,116 @@
                             <div class="info-label">Expected Graduation</div>
                             <div class="info-value">{{ beneficiary.expected_graduation|date:"F j, Y"|default:"--" }}</div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Education Documents Card -->
+            <div class="profile-card">
+                <div class="profile-card-header">
+                    <h3>Education Documents</h3>
+                </div>
+                <div class="profile-card-body">
+                    <div class="document-list">
+                        {% if beneficiary.admission_letter %}
+                        <div class="document-item">
+                            <div class="document-info">
+                                <div class="document-icon">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <div class="document-name">Admission Letter</div>
+                            </div>
+                            <div class="document-actions">
+                                <a href="{{ beneficiary.admission_letter.url }}" target="_blank" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if beneficiary.fee_structure %}
+                        <div class="document-item">
+                            <div class="document-info">
+                                <div class="document-icon">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                </div>
+                                <div class="document-name">Fee Structure</div>
+                            </div>
+                            <div class="document-actions">
+                                <a href="{{ beneficiary.fee_structure.url }}" target="_blank" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if beneficiary.fee_statement %}
+                        <div class="document-item">
+                            <div class="document-info">
+                                <div class="document-icon">
+                                    <i class="fas fa-receipt"></i>
+                                </div>
+                                <div class="document-name">Fee Statement</div>
+                            </div>
+                            <div class="document-actions">
+                                <a href="{{ beneficiary.fee_statement.url }}" target="_blank" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if beneficiary.receipts %}
+                        <div class="document-item">
+                            <div class="document-info">
+                                <div class="document-icon">
+                                    <i class="fas fa-file-invoice"></i>
+                                </div>
+                                <div class="document-name">Receipts</div>
+                            </div>
+                            <div class="document-actions">
+                                <a href="{{ beneficiary.receipts.url }}" target="_blank" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if beneficiary.letters %}
+                        <div class="document-item">
+                            <div class="document-info">
+                                <div class="document-icon">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                                <div class="document-name">Letters</div>
+                            </div>
+                            <div class="document-actions">
+                                <a href="{{ beneficiary.letters.url }}" target="_blank" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if beneficiary.guardian_id_copy %}
+                        <div class="document-item">
+                            <div class="document-info">
+                                <div class="document-icon">
+                                    <i class="fas fa-id-card"></i>
+                                </div>
+                                <div class="document-name">Guardian ID Copy</div>
+                            </div>
+                            <div class="document-actions">
+                                <a href="{{ beneficiary.guardian_id_copy.url }}" target="_blank" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-download"></i> Download
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if not beneficiary.admission_letter and not beneficiary.fee_structure and not beneficiary.fee_statement and not beneficiary.receipts and not beneficiary.letters and not beneficiary.guardian_id_copy %}
+                        <p>No documents uploaded yet.</p>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -528,7 +771,7 @@
             <div class="profile-card">
                 <div class="profile-card-header">
                     <h3>Recent Payments</h3>
-                    <a href="#" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+                    <a href="#" class="btn btn-secondary btn-sm">
                         View All
                     </a>
                 </div>
@@ -567,7 +810,7 @@
             <div class="profile-card">
                 <div class="profile-card-header">
                     <h3>Academic Performance</h3>
-                    <a href="#" class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+                    <a href="#" class="btn btn-secondary btn-sm">
                         View All
                     </a>
                 </div>
